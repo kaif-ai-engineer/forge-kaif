@@ -128,14 +128,14 @@ class ForgeRuntime:
         self.register(RetryModule())
 
         try:
-            from forge.health.module import HealthModule  # type: ignore[import-untyped]
+            from forge.health.module import HealthModule
 
             self.register(HealthModule())
         except ImportError:
             pass
 
         try:
-            from forge.cache.module import CacheModule  # type: ignore[import-untyped]
+            from forge.cache.module import CacheModule
 
             self.register(CacheModule())
         except ImportError:
