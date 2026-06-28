@@ -1,0 +1,27 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+import forge
+from forge.config import config
+from forge.log import log
+
+runtime = forge.Runtime()
+runtime.use_defaults()
+
+logger = log.get(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await runtime.init()
+    logger.info("Application started", environment=config.environment)
+    yield
+    await runtime.teardown()
+    logger.info("Application stopped")
+
+
+app = FastAPI(title="{{ project_name }}", lifespan=lifespan)
+
+
+@app.get("/")
+def read_root() -> dict[str, str]:
+    return {"message": "Hello from {{ project_name }}!"}

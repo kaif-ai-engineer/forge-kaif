@@ -1,6 +1,5 @@
-"""
-CLI module — forge command-line tool for project scaffolding and utilities.
+from __future__ import annotations
 
-Provides the forge CLI entry point with commands for project initialization,
-module management, configuration validation, and development server execution.
-"""
+from forge.cli.main import app, main
+
+__all__ = ["app", "main"]

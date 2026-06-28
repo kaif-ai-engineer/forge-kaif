@@ -1,0 +1,25 @@
+environment = "development"
+debug = true
+
+[log]
+level = "info"
+format = "json"
+
+[retry]
+max_attempts = 3
+backoff_factor = 2.0
+
+[ai]
+default_provider = "openai"
+default_model = "gpt-4o"
+
+[cache]
+backend = "memory"
+default_ttl = 300
+memory_max_size = 1000
+
+[health]
+include_details = true
+check_timeout = 1.0
+health_path = "/health"
+ready_path = "/ready"

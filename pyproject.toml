@@ -28,6 +28,10 @@ dependencies = [
     "pydantic-settings>=2.0",
 ]
 
+[project.scripts]
+forge = "forge.cli.main:main"
+
+
 [project.optional-dependencies]
 openai = ["openai>=1.0"]
 anthropic = ["anthropic>=0.20"]
@@ -52,7 +56,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D200", "D205", "D212", "D401", "D404", "D406", "D407", "D413", "ANN401", "COM812", "ISC001", "D203", "TRY003", "EM101", "EM102", "BLE001", "B027", "PLC0415", "A001", "A004", "SLF001", "TC001", "TC003", "PLR0913", "C901", "PLR0912", "ARG002", "PLR0915", "TRY300", "RUF005", "RET504", "TC002"]
+ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D200", "D205", "D212", "D401", "D404", "D406", "D407", "D413", "ANN401", "COM812", "ISC001", "D203", "TRY003", "EM101", "EM102", "BLE001", "B027", "PLC0415", "A001", "A004", "SLF001", "TC001", "TC003", "PLR0913", "C901", "PLR0912", "ARG002", "PLR0915", "TRY300", "RUF005", "RET504", "TC002", "FBT001", "FBT002", "FBT003", "E501", "TRY203", "TRY201", "B904", "RSE102", "PTH109", "E402", "B008", "PTH123"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]

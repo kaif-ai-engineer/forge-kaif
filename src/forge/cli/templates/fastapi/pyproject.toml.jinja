@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling>=1.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "{{ project_name }}"
+version = "0.1.0"
+description = "A FastAPI service built with Forge"
+dependencies = [
+    "forge-runtime>=0.1.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+]
