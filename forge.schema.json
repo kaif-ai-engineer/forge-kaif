@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "forge-runtime",
+  "description": "Machine-readable API manifest for AI agent tool discovery. Describes the public API surface of the forge-runtime package.",
+  "version": "0.1.0",
+  "modules": {
+    "forge.config": {
+      "description": "Typed, validated, layered configuration from env vars, .env, and TOML.",
+      "functions": [
+        {
+          "name": "require",
+          "signature": "require(*keys: str) -> None",
+          "description": "Validate that required config keys are present at startup. Raises ConfigurationError if any are missing.",
+          "example": "config.require(['DATABASE_URL', 'OPENAI_API_KEY'])"
+        },
+        {
+          "name": "override",
+          "signature": "override(values: dict[str, Any]) -> Generator[None, None, None]",
+          "description": "Context manager for overriding config values in tests.",
+          "example": "with config.override({'database.url': 'sqlite:///:memory:'}): ..."
+        }
+      ]
+    },
+    "forge.log": {
+      "description": "Structured JSON logging with automatic trace context propagation.",
+      "functions": [
+        {
+          "name": "get",
+          "signature": "get(name: str) -> Logger",
+          "description": "Get a logger instance for the given module name.",
+          "example": "logger = log.get('my_module')"
+        },
+        {
+          "name": "context",
+          "signature": "context(**kwargs: Any) -> Generator[None, None, None]",
+          "description": "Context manager for binding key-value pairs to all log entries within the context.",
+          "example": "with log.context(request_id='abc-123'): ..."
+        }
+      ]
+    },
+    "forge.retry": {
+      "description": "Retry logic with exponential backoff, jitter, and circuit breaker.",
+      "classes": [
+        {
+          "name": "CircuitBreaker",
+          "signature": "CircuitBreaker(failure_threshold: int = 5, recovery_time: float = 60.0)",
+          "description": "Circuit breaker that prevents retries after a configurable failure threshold.",
+          "example": "breaker = CircuitBreaker(failure_threshold=5, recovery_time=60)"
+        }
+      ],
+      "functions": [
+        {
+          "name": "retry",
+          "signature": "retry(attempts: int = 3, backoff: str = 'exponential', exceptions: list[type[Exception]] | None = None, circuit_breaker: CircuitBreaker | None = None)",
+          "description": "Decorator for async functions that retries on failure with configurable backoff.",
+          "example": "@retry(attempts=3, backoff='exponential')"
+        },
+        {
+          "name": "attempt",
+          "signature": "attempt(max_attempts: int = 3) -> AsyncIterator[AttemptContext]",
+          "description": "Async context manager for manual retry loops.",
+          "example": "async with retry.attempt(max_attempts=3) as attempt: ..."
+        }
+      ]
+    },
+    "forge.ai": {
+      "description": "Unified AI model interface across OpenAI, Anthropic, Gemini, and Ollama.",
+      "classes": [
+        {
+          "name": "Message",
+          "signature": "Message(role: str, content: str)",
+          "description": "A chat message with role (system, user, assistant) and content."
+        },
+        {
+          "name": "AIResponse",
+          "signature": "AIResponse(content: str, model: str, usage: dict[str, int])",
+          "description": "Response from an AI model call including content, model used, and token usage."
+        }
+      ],
+      "functions": [
+        {
+          "name": "complete",
+          "signature": "complete(messages: list[Message], model: str | None = None, max_tokens: int | None = None, output_schema: type[BaseModel] | None = None, fallback_models: list[str] | None = None) -> AIResponse",
+          "description": "Send a completion request to an AI model. Supports structured output via Pydantic schemas with automatic retry on invalid output.",
+          "example": "response = await complete(messages=[Message.user('Hello')], model='gpt-4o')"
+        },
+        {
+          "name": "stream",
+          "signature": "stream(messages: list[Message], model: str | None = None, **kwargs: Any) -> AsyncIterator[StreamChunk]",
+          "description": "Stream a completion response from an AI model. Yields content delta chunks.",
+          "example": "async for chunk in stream(messages=[Message.user('Tell me a story')]): ..."
+        }
+      ]
+    },
+    "forge.health": {
+      "description": "Kubernetes-compatible /health and /ready endpoints with custom check registration.",
+      "functions": [
+        {
+          "name": "check",
+          "signature": "check(name: str) -> Callable",
+          "description": "Decorator for registering a custom health check function.",
+          "example": "@forge.health.check('database') async def check_db(): ..."
+        }
+      ]
+    },
+    "forge.cache": {
+      "description": "Decorator-based caching with in-memory LRU and Redis backends.",
+      "functions": [
+        {
+          "name": "cached",
+          "signature": "cached(ttl: int = 300, key: str | None = None, backend: str | None = None)",
+          "description": "Decorator that caches async function results with configurable TTL.",
+          "example": "@cached(ttl=300) async def get_user(user_id: int): ..."
+        },
+        {
+          "name": "invalidate",
+          "signature": "invalidate(key: str) -> Awaitable[None]",
+          "description": "Invalidate a cached entry by key.",
+          "example": "await invalidate('user:123')"
+        }
+      ]
+    },
+    "forge.validation": {
+      "description": "Pydantic-integrated input validation with consistent error responses.",
+      "functions": [
+        {
+          "name": "validate",
+          "signature": "validate(func: Callable) -> Callable",
+          "description": "Decorator that validates function arguments against type annotations using Pydantic.",
+          "example": "@validate async def create_user(data: CreateUserRequest): ..."
+        }
+      ]
+    },
+    "forge.core": {
+      "description": "Core runtime with module registry, DI container, event bus, and lifecycle management.",
+      "classes": [
+        {
+          "name": "ForgeModule",
+          "signature": "ForgeModule()",
+          "description": "Base class for all forge modules. Subclasses must implement the 'name' property."
+        },
+        {
+          "name": "Runtime",
+          "signature": "Runtime()",
+          "description": "Central runtime coordinator that manages module lifecycle, DI, and events.",
+          "example": "runtime = forge.Runtime()\nruntime.register(ConfigModule())\nawait runtime.init()"
+        }
+      ]
+    }
+  }
+}
