@@ -1,4 +1,5 @@
-"""Config module — layered configuration with pydantic-settings and TOML support.
+"""
+Config module — layered configuration with pydantic-settings and TOML support.
 
 Provides the ForgeConfig model with automatic environment-variable binding
 via pydantic-settings, the ConfigModule lifecycle wrapper, and utilities for
