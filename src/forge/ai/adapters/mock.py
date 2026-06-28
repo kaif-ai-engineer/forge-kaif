@@ -10,7 +10,7 @@ from forge.ai.tokens import TokenCounter
 if TYPE_CHECKING:
     from forge.ai.models import CompletionRequest
 
-from forge.ai.models import CompletionResponse, Message, Usage
+from forge.ai.models import CompletionResponse, Message, StreamChunk, Usage
 
 _logger = logging.getLogger(__name__)
 
@@ -37,12 +37,20 @@ class MockAdapter(BaseAdapter):
                 input_tokens=TokenCounter.count_messages(request.messages),
                 output_tokens=self.count_tokens(self._response_text),
             ),
+            provider="mock",
         )
 
-    async def stream(
-        self, _request: CompletionRequest
-    ) -> AsyncIterator[str]:
-        yield self._response_text
+    async def stream(self, request: CompletionRequest) -> AsyncIterator[StreamChunk]:
+        yield StreamChunk(
+            delta=self._response_text,
+            finish_reason="stop",
+            usage=Usage(
+                input_tokens=TokenCounter.count_messages(request.messages),
+                output_tokens=self.count_tokens(self._response_text),
+            ),
+            model=request.model,
+            provider="mock",
+        )
 
     def count_tokens(self, text: str) -> int:
         return TokenCounter.count_tokens(text)

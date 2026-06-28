@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from forge.ai.tokens import TokenCounter
 
 if TYPE_CHECKING:
-    from forge.ai.models import CompletionRequest, CompletionResponse, Usage
+    from forge.ai.models import CompletionRequest, CompletionResponse, StreamChunk, Usage
 
 
 class BaseAdapter(ABC):
@@ -22,9 +22,7 @@ class BaseAdapter(ABC):
     async def complete(self, request: CompletionRequest) -> CompletionResponse:
         """Synchronous (non-streaming) completion."""
 
-    async def stream(
-        self, _request: CompletionRequest
-    ) -> AsyncIterator[str]:
+    async def stream(self, _request: CompletionRequest) -> AsyncIterator[StreamChunk]:
         """Yield content chunks as they arrive."""
         # Subclasses override; the ``if False: yield`` makes type
         # checkers recognise this as an async generator.

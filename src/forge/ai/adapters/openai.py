@@ -10,7 +10,13 @@ from forge.ai.tokens import TokenCounter
 if TYPE_CHECKING:
     from forge.ai.models import CompletionRequest
 
-from forge.ai.models import CompletionResponse, Message, Usage
+from forge.ai.exceptions import (
+    AIProviderError,
+    ModelNotFoundError,
+    RateLimitError,
+    StreamInterruptedError,
+)
+from forge.ai.models import CompletionResponse, Message, StreamChunk, Usage
 
 _logger = logging.getLogger(__name__)
 
@@ -36,11 +42,22 @@ class OpenAIAdapter(BaseAdapter):
     # ── BaseAdapter ────────────────────────────────────────────────
 
     async def complete(self, request: CompletionRequest) -> CompletionResponse:
-        if self._client is None:
+        if self._client is None or not self._api_key:
             return _mock_complete(request)
 
         payload = self._build_payload(request)
-        response = await self._client.chat.completions.create(**payload)
+        try:
+            response = await self._client.chat.completions.create(**payload)
+        except Exception as exc:
+            import openai
+
+            if isinstance(exc, openai.RateLimitError):
+                raise RateLimitError(f"OpenAI API rate limit exceeded: {exc}") from exc
+            if isinstance(exc, openai.AuthenticationError):
+                raise AIProviderError(f"OpenAI API authentication failed: {exc}") from exc
+            if isinstance(exc, openai.NotFoundError):
+                raise ModelNotFoundError(f"OpenAI model not found: {exc}") from exc
+            raise AIProviderError(f"OpenAI API error: {exc}") from exc
 
         return CompletionResponse(
             model=response.model or request.model,
@@ -52,23 +69,60 @@ class OpenAIAdapter(BaseAdapter):
                 input_tokens=response.usage.prompt_tokens if response.usage else 0,
                 output_tokens=response.usage.completion_tokens if response.usage else 0,
             ),
+            provider="openai",
         )
 
-    async def stream(
-        self, request: CompletionRequest
-    ) -> AsyncIterator[str]:
-        if self._client is None:
-            async for chunk in _mock_stream():
+    async def stream(self, request: CompletionRequest) -> AsyncIterator[StreamChunk]:
+        if self._client is None or not self._api_key:
+            async for chunk in _mock_stream(request):
                 yield chunk
             return
 
         payload = self._build_payload(request)
         payload["stream"] = True
-        response = await self._client.chat.completions.create(**payload)
+        payload["stream_options"] = {"include_usage": True}
+        try:
+            response = await self._client.chat.completions.create(**payload)
+        except Exception as exc:
+            import openai
 
-        async for event in response:
-            if event.choices and event.choices[0].delta.content:
-                yield event.choices[0].delta.content
+            if isinstance(exc, openai.RateLimitError):
+                raise RateLimitError(f"OpenAI API rate limit exceeded: {exc}") from exc
+            if isinstance(exc, openai.AuthenticationError):
+                raise AIProviderError(f"OpenAI API authentication failed: {exc}") from exc
+            if isinstance(exc, openai.NotFoundError):
+                raise ModelNotFoundError(f"OpenAI model not found: {exc}") from exc
+            raise AIProviderError(f"OpenAI API error: {exc}") from exc
+
+        try:
+            async for event in response:
+                delta_content = ""
+                finish_reason = None
+                usage = None
+
+                if event.choices:
+                    choice = event.choices[0]
+                    if choice.delta and choice.delta.content:
+                        delta_content = choice.delta.content
+                    if choice.finish_reason:
+                        finish_reason = choice.finish_reason
+
+                if hasattr(event, "usage") and event.usage is not None:
+                    usage = Usage(
+                        input_tokens=event.usage.prompt_tokens,
+                        output_tokens=event.usage.completion_tokens,
+                    )
+
+                if delta_content or finish_reason or usage:
+                    yield StreamChunk(
+                        delta=delta_content,
+                        finish_reason=finish_reason,
+                        usage=usage,
+                        model=event.model or request.model,
+                        provider="openai",
+                    )
+        except Exception as exc:
+            raise StreamInterruptedError(f"OpenAI stream interrupted: {exc}") from exc
 
     def count_tokens(self, text: str) -> int:
         return TokenCounter.count_tokens(text)
@@ -79,11 +133,12 @@ class OpenAIAdapter(BaseAdapter):
         try:
             import openai
 
-            self._client = openai.AsyncOpenAI(
-                api_key=self._api_key, timeout=self._timeout
-            )
-        except ImportError:
-            _logger.warning("openai package not installed — using mock")
+            if not self._api_key:
+                self._client = None
+            else:
+                self._client = openai.AsyncOpenAI(api_key=self._api_key, timeout=self._timeout)
+        except (ImportError, Exception) as exc:
+            _logger.warning("Failed to initialize OpenAI client: %s — using mock", exc)
             self._client = None
 
     def _build_payload(self, request: CompletionRequest) -> dict[str, Any]:
@@ -107,8 +162,18 @@ def _mock_complete(request: CompletionRequest) -> CompletionResponse:
             input_tokens=TokenCounter.count_messages(request.messages),
             output_tokens=10,
         ),
+        provider="openai",
     )
 
 
-async def _mock_stream() -> AsyncIterator[str]:
-    yield "[mock openai chunk]"
+async def _mock_stream(request: CompletionRequest) -> AsyncIterator[StreamChunk]:
+    yield StreamChunk(
+        delta="[mock openai chunk]",
+        finish_reason="stop",
+        usage=Usage(
+            input_tokens=TokenCounter.count_messages(request.messages),
+            output_tokens=4,
+        ),
+        model=request.model,
+        provider="openai",
+    )

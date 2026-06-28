@@ -5,11 +5,14 @@ import re
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
+from forge.ai.exceptions import AllModelsFailedError, ModelNotFoundError
 from forge.ai.tokens import TokenCounter
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from forge.ai.adapters.base import BaseAdapter
-    from forge.ai.models import CompletionRequest, CompletionResponse
+    from forge.ai.models import CompletionRequest, CompletionResponse, StreamChunk
 
 _logger = logging.getLogger(__name__)
 
@@ -28,10 +31,15 @@ class ModelRouter:
         resp = await router.complete(request)
     """
 
-    def __init__(self, max_tokens_limit: int = 128_000) -> None:
+    def __init__(
+        self,
+        max_tokens_limit: int = 128_000,
+        retry_module: Any | None = None,
+    ) -> None:
         self._patterns: list[tuple[re.Pattern[str], BaseAdapter]] = []
-        self._fallback: list[BaseAdapter] = []
+        self._fallback: list[tuple[str, BaseAdapter]] = []
         self._max_tokens_limit = max_tokens_limit
+        self._retry_module = retry_module
 
     # ── Registration ───────────────────────────────────────────────
 
@@ -51,7 +59,7 @@ class ModelRouter:
         regex = _glob_to_regex(model_pattern)
         compiled = re.compile(regex)
         if is_fallback:
-            self._fallback.append(adapter)
+            self._fallback.append((model_pattern, adapter))
         else:
             self._patterns.append((compiled, adapter))
 
@@ -80,9 +88,7 @@ class ModelRouter:
         """
         adapter = self.resolve(request.model)
         if adapter is None:
-            raise ModelNotFoundError(
-                f"No adapter registered for model {request.model!r}"
-            )
+            raise ModelNotFoundError(f"No adapter registered for model {request.model!r}")
 
         # Pre-request budget check
         TokenCounter.check_budget(request, self._max_tokens_limit)
@@ -90,7 +96,7 @@ class ModelRouter:
         # Attempt primary adapter
         last_error: Exception | None = None
         try:
-            return await adapter.complete(request)
+            return await self._call_adapter(adapter, request)
         except Exception as exc:
             last_error = exc
             _logger.warning(
@@ -102,55 +108,67 @@ class ModelRouter:
 
         # Fallback chain
         fallback_adapters = self._build_fallback_chain(fallback_models)
-        for fb_adapter in fallback_adapters:
+        for fb_model, fb_adapter in fallback_adapters:
             try:
-                return await fb_adapter.complete(request)
+                fb_request = request.model_copy(update={"model": fb_model})
+                return await self._call_adapter(fb_adapter, fb_request)
             except Exception as exc:
                 last_error = exc
-                _logger.warning(
-                    "Fallback %s also failed: %s", fb_adapter.provider, exc
-                )
+                _logger.warning("Fallback %s also failed: %s", fb_adapter.provider, exc)
 
-        raise CompletionError(
-            f"All {1 + len(fallback_adapters)} adapter(s) failed for "
-            f"model {request.model!r}"
+        raise AllModelsFailedError(
+            f"All {1 + len(fallback_adapters)} adapter(s) failed for model {request.model!r}"
         ) from last_error
 
     async def stream(
         self,
         request: CompletionRequest,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[StreamChunk]:
         adapter = self.resolve(request.model)
         if adapter is None:
-            raise ModelNotFoundError(
-                f"No adapter registered for model {request.model!r}"
-            )
+            raise ModelNotFoundError(f"No adapter registered for model {request.model!r}")
         TokenCounter.check_budget(request, self._max_tokens_limit)
         async for chunk in adapter.stream(request):
             yield chunk
+
+    async def _call_adapter(
+        self, adapter: BaseAdapter, request: CompletionRequest
+    ) -> CompletionResponse:
+        if self._retry_module is not None:
+            from typing import cast
+
+            from forge.ai.exceptions import RateLimitError
+
+            res = await self._retry_module.retry(
+                adapter.complete,
+                retryable_exceptions=(RateLimitError,),
+            )(request)
+            return cast("CompletionResponse", res)
+        return await adapter.complete(request)
 
     # ── Internal ───────────────────────────────────────────────────
 
     def _build_fallback_chain(
         self,
         fallback_models: list[str] | None,
-    ) -> list[BaseAdapter]:
+    ) -> list[tuple[str, BaseAdapter]]:
         if fallback_models:
-            adapters: list[BaseAdapter] = []
+            adapters: list[tuple[str, BaseAdapter]] = []
             for model in fallback_models:
                 a = self.resolve(model)
                 if a is not None:
-                    adapters.append(a)
+                    adapters.append((model, a))
             return adapters
-        return list(self._fallback)
+
+        chain: list[tuple[str, BaseAdapter]] = []
+        for pat, adapter in self._fallback:
+            model_name = pat.replace("*", "").replace("?", "")
+            chain.append((model_name, adapter))
+        return chain
 
 
-class ModelNotFoundError(LookupError):
-    """Raised when no adapter is registered for the requested model."""
-
-
-class CompletionError(RuntimeError):
-    """Raised when all adapters in the chain have failed."""
+# Alias for backward compatibility
+CompletionError = AllModelsFailedError
 
 
 def _glob_to_regex(pattern: str) -> str:

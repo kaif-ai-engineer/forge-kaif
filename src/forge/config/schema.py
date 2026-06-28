@@ -45,6 +45,7 @@ class AIConfig(BaseModel):
     structured_output_retries: int = Field(default=3, ge=0)
     openai_api_key: SecretStr | None = Field(default=None)
     anthropic_api_key: SecretStr | None = Field(default=None)
+    gemini_api_key: SecretStr | None = Field(default=None)
 
 
 class HealthConfig(BaseModel):

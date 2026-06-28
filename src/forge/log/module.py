@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from contextlib import contextmanager
 from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -10,8 +11,11 @@ from forge.config.module import ConfigModule
 from forge.core.module import ForgeModule, HealthResult
 from forge.log.context import LogContextFilter
 from forge.log.formatters import DevFormatter, JSONFormatter
+from forge.log.proxy import LoggerProxy
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from forge.core.runtime import ForgeRuntime
 
 _ROOT = ""  # Python root logger name
@@ -56,6 +60,18 @@ class LogModule(ForgeModule):
             logger.setLevel(logging.DEBUG)
         return logger
 
+    def get(self, name: str) -> LoggerProxy:
+        """Return a logger wrapped in LoggerProxy for *name*."""
+        return LoggerProxy(self.get_logger(name))
+
+    @contextmanager
+    def context(self, **kwargs: Any) -> Generator[None, None, None]:
+        """Context manager for binding key-value pairs to all log entries within the context."""
+        from forge.log.context import LogContext
+
+        with LogContext(**kwargs):
+            yield
+
     # ── ForgeModule ────────────────────────────────────────────────
 
     async def setup(self, runtime: ForgeRuntime) -> None:
@@ -99,9 +115,7 @@ class LogModule(ForgeModule):
         # Set per-module log levels from config
         for module_name, level_name in log_cfg.levels.items():
             logger = logging.getLogger(module_name)
-            logger.setLevel(
-                getattr(logging, level_name.upper(), logging.NOTSET)
-            )
+            logger.setLevel(getattr(logging, level_name.upper(), logging.NOTSET))
 
     async def teardown(self) -> None:
         if self._listener is not None:
@@ -131,5 +145,3 @@ class LogModule(ForgeModule):
         root = logging.getLogger(_ROOT)
         root.addHandler(self._buffer)
         root.setLevel(logging.DEBUG)
-
-

@@ -4,7 +4,7 @@ import asyncio
 import logging
 import signal
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, ClassVar, Self
 
 from forge.core.container import Container
 from forge.core.events import EventBus
@@ -31,6 +31,24 @@ class ForgeRuntime:
         # ... application code ...
         await runtime.teardown()
     """
+
+    _active: ClassVar[ForgeRuntime | None] = None
+
+    @classmethod
+    def get_active(cls) -> ForgeRuntime:
+        """
+        Return the active initialized runtime instance.
+
+        Raises
+        ------
+        RuntimeNotInitializedError
+            When no runtime is currently active/initialized.
+        """
+        if cls._active is None or not cls._active.is_initialized:
+            from forge.core.exceptions import RuntimeNotInitializedError
+
+            raise RuntimeNotInitializedError("Runtime is not initialized.")
+        return cls._active
 
     def __init__(self) -> None:
         self._initialized = False
@@ -70,7 +88,7 @@ class ForgeRuntime:
     # Module registration
     # ------------------------------------------------------------------
 
-    def register(self, module: ForgeModule, *, replace: bool = False) -> None:
+    def register(self, module: ForgeModule, *, replace: bool = False) -> Self:
         """
         Register a module with the runtime.
 
@@ -80,8 +98,50 @@ class ForgeRuntime:
             An instantiated ``ForgeModule`` subclass.
         replace:
             If ``True``, silently replace an existing registration.
+
+        Returns
+        -------
+        Self
+            For method chaining.
         """
         self._container.register(module, replace=replace)
+        return self
+
+    def use_defaults(self) -> Self:
+        """
+        Register all default modules (config, log, retry, health, cache).
+
+        This is a convenience method for standard applications.
+        For custom configurations, register modules individually.
+
+        Returns
+        -------
+        Self
+            For method chaining.
+        """
+        from forge.config.module import ConfigModule
+        from forge.log.module import LogModule
+        from forge.retry.module import RetryModule
+
+        self.register(ConfigModule())
+        self.register(LogModule())
+        self.register(RetryModule())
+
+        try:
+            from forge.health.module import HealthModule  # type: ignore[import-untyped]
+
+            self.register(HealthModule())
+        except ImportError:
+            pass
+
+        try:
+            from forge.cache.module import CacheModule  # type: ignore[import-untyped]
+
+            self.register(CacheModule())
+        except ImportError:
+            pass
+
+        return self
 
     def get(self, module_type: type[ForgeModule]) -> ForgeModule:
         """
@@ -149,6 +209,7 @@ class ForgeRuntime:
             await hook()
 
         self._initialized = True
+        ForgeRuntime._active = self
 
     async def teardown(self) -> None:
         """
@@ -183,6 +244,8 @@ class ForgeRuntime:
                 _log.exception("Error tearing down module '%s'", module.name)
 
         self._initialized = False
+        if ForgeRuntime._active is self:
+            ForgeRuntime._active = None
 
     # ------------------------------------------------------------------
     # Signal handling

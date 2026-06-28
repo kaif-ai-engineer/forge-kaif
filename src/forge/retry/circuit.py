@@ -109,9 +109,7 @@ class CircuitBreaker:
                 )
                 self._state = CircuitBreakerState.HALF_OPEN
             else:
-                raise CircuitBreakerOpenError(
-                    f"Circuit breaker {self._name!r} is OPEN"
-                )
+                raise CircuitBreakerOpenError(f"Circuit breaker {self._name!r} is OPEN")
 
     def _on_success(self) -> None:
         if self._state is CircuitBreakerState.HALF_OPEN:

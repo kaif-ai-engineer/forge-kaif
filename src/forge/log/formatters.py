@@ -143,9 +143,7 @@ class JSONFormatter(logging.Formatter):
             payload["trace_id"] = trace_id
 
         if record.exc_info and record.exc_info[0] is not None:
-            payload["exception"] = "".join(
-                traceback.format_exception(*record.exc_info)
-            )
+            payload["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
         extras = _extra_fields(record)
         payload.update(extras)
@@ -164,9 +162,9 @@ class DevFormatter(logging.Formatter):
     """
 
     def format(self, record: logging.LogRecord) -> str:
-        timestamp = datetime.datetime.fromtimestamp(
-            record.created, tz=datetime.UTC
-        ).strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.datetime.fromtimestamp(record.created, tz=datetime.UTC).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         level = _LEVEL_LABELS.get(record.levelno, record.levelname)
         colour = _COLOUR_MAP.get(record.levelno, _GREY)
 

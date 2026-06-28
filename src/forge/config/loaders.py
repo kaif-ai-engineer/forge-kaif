@@ -26,9 +26,7 @@ def load_toml(path: str | Path) -> dict[str, Any]:
     except tomllib.TOMLDecodeError as exc:
         from forge.core.exceptions import ConfigurationError
 
-        raise ConfigurationError(
-            f"Failed to parse TOML file '{path}': {exc}"
-        ) from exc
+        raise ConfigurationError(f"Failed to parse TOML file '{path}': {exc}") from exc
 
     _resolve_env_vars(data, path)
     return data

@@ -49,8 +49,5 @@ def get_backoff(name: str) -> BackoffFn:
     """
     fn = _STRATEGIES.get(name)
     if fn is None:
-        raise ValueError(
-            f"Unknown backoff strategy {name!r}. "
-            f"Choose from {list(_STRATEGIES)}."
-        )
+        raise ValueError(f"Unknown backoff strategy {name!r}. Choose from {list(_STRATEGIES)}.")
     return fn

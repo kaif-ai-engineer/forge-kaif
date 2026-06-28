@@ -38,6 +38,8 @@ from forge.core.exceptions import (
 from forge.core.module import ForgeModule, HealthResult, ModuleLifecycleState
 from forge.core.runtime import ForgeRuntime
 
+Runtime = ForgeRuntime
+
 __all__ = [
     "CircularDependencyError",
     "ConfigurationError",
@@ -54,6 +56,7 @@ __all__ = [
     "ModuleNotFoundError",
     "ModuleRegistrationError",
     "ModuleStateError",
+    "Runtime",
     "RuntimeNotInitializedError",
     "TraceContext",
     "generate_span_id",

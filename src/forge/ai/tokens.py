@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from forge.ai.exceptions import TokenLimitError
+
 if TYPE_CHECKING:
     from forge.ai.models import CompletionRequest, Message, Usage
 
@@ -59,20 +61,16 @@ class TokenCounter:
         max_tokens_limit: int,
     ) -> None:
         """
-        Raise :class:`ValueError` if the estimated request exceeds *max_tokens_limit*.
+        Raise :class:`TokenLimitError` if the estimated request exceeds *max_tokens_limit*.
 
         Catches runaway prompts before calling the adapter.
         """
         estimated = TokenCounter.count_messages(request.messages)
         if estimated > max_tokens_limit:
-            raise BudgetExceededError(
-                f"Estimated {estimated} input tokens exceeds "
-                f"limit of {max_tokens_limit}"
+            raise TokenLimitError(
+                f"Estimated {estimated} input tokens exceeds limit of {max_tokens_limit}"
             )
 
 
-class BudgetExceededError(ValueError):
+class BudgetExceededError(TokenLimitError):
     """Raised when the estimated token count exceeds the configured limit."""
-
-
-

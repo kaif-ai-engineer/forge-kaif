@@ -61,7 +61,7 @@ class NonRetryableError(Exception):
 class _RetryImpl:
     """Internal implementation — do not use directly; use :func:`retry` instead."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         attempts: int = 3,
@@ -124,9 +124,7 @@ class _RetryImpl:
         for attempt in range(1, self._attempts + 1):
             try:
                 if self._timeout is not None:
-                    return await asyncio.wait_for(
-                        fn(*args, **kwargs), timeout=self._timeout
-                    )
+                    return await asyncio.wait_for(fn(*args, **kwargs), timeout=self._timeout)
                 return await fn(*args, **kwargs)
             except NonRetryableError:
                 raise
@@ -180,7 +178,7 @@ def _name(fn: Callable[..., Any]) -> str:
     return getattr(fn, "__name__", str(fn))
 
 
-def retry(  # noqa: PLR0913
+def retry(
     fn: Callable[..., Any] | None = None,
     *,
     attempts: int = 3,
@@ -241,7 +239,7 @@ class RetryModule(ForgeModule):
     def health_check(self) -> HealthResult:
         return HealthResult.ok()
 
-    def retry(  # noqa: PLR0913
+    def retry(
         self,
         fn: Callable[..., Any] | None = None,
         *,
@@ -286,8 +284,6 @@ class RetryModule(ForgeModule):
             failure_threshold=(
                 failure_threshold if failure_threshold is not None else cb_cfg.failure_threshold
             ),
-            recovery_time=(
-                recovery_time if recovery_time is not None else cb_cfg.recovery_time
-            ),
+            recovery_time=(recovery_time if recovery_time is not None else cb_cfg.recovery_time),
             name=name,
         )
