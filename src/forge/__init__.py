@@ -10,6 +10,8 @@ from forge.config.module import ConfigModule
 from forge.config.schema import ForgeConfig
 from forge.core.module import ForgeModule
 from forge.core.runtime import ForgeRuntime
+from forge import health
+from forge.health.module import HealthModule
 from forge.log.module import LogModule
 from forge.retry.module import RetryModule
 
@@ -21,8 +23,10 @@ __all__ = [
     "ForgeConfig",
     "ForgeModule",
     "ForgeRuntime",
+    "HealthModule",
     "LogModule",
     "RetryModule",
     "Runtime",
     "__version__",
+    "health",
 ]
