@@ -141,6 +141,13 @@ class ForgeRuntime:
         except ImportError:
             pass
 
+        try:
+            from forge.validation.module import ValidationModule
+
+            self.register(ValidationModule())
+        except ImportError:
+            pass
+
         return self
 
     def get(self, module_type: type[ForgeModule]) -> ForgeModule:
