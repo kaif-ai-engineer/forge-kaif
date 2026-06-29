@@ -4,7 +4,7 @@ Forge framework — A modular runtime infrastructure library.
 
 from __future__ import annotations
 
-from forge import cache, health, jobs, storage, validation
+from forge import cache, events, health, jobs, storage, validation
 from forge._version import __version__
 from forge.ai.module import AIModule
 from forge.cache.module import CacheModule
@@ -12,6 +12,7 @@ from forge.config.module import ConfigModule
 from forge.config.schema import ForgeConfig
 from forge.core.module import ForgeModule
 from forge.core.runtime import ForgeRuntime
+from forge.events.module import EventsModule
 from forge.health.module import HealthModule
 from forge.jobs.module import JobsModule
 from forge.log.module import LogModule
@@ -25,6 +26,7 @@ __all__ = [
     "AIModule",
     "CacheModule",
     "ConfigModule",
+    "EventsModule",
     "ForgeConfig",
     "ForgeModule",
     "ForgeRuntime",
@@ -37,6 +39,7 @@ __all__ = [
     "ValidationModule",
     "__version__",
     "cache",
+    "events",
     "health",
     "jobs",
     "storage",
