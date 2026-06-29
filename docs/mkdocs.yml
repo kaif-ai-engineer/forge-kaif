@@ -1,0 +1,129 @@
+site_name: forge
+site_description: The developer runtime for AI-era Python.
+site_url: https://useforge.dev
+repo_url: https://github.com/forge-runtime/forge
+edit_uri: edit/main/docs/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+    admonition:
+      note: octicons/tag-16
+      tip: octicons/light-bulb-16
+      warning: octicons/alert-16
+      danger: octicons/flame-16
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - admonition
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [../../src]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_category_heading: true
+            show_bases: true
+            show_inherited_diagram: true
+            annotations_path: brief
+            line_length: 88
+            separate_signature: true
+            show_signature_annotations: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/forge-runtime/forge
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/forge-runtime/
+  generator: false
+
+extra_css:
+  - stylesheets/extra.css
+
+copyright: Copyright &copy; 2025 forge-runtime
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started/index.md
+  - Why forge?: why-forge.md
+  - Modules:
+      - Config: modules/config.md
+      - Logging: modules/log.md
+      - Retry: modules/retry.md
+      - AI: modules/ai.md
+      - Health: modules/health.md
+      - Cache: modules/cache.md
+      - Validation: modules/validation.md
+  - Guides:
+      - Using with FastAPI: guides/fastapi.md
+      - Using with AI Agents: guides/ai-agents.md
+      - Testing Your App: guides/testing.md
+      - Production Deployment: guides/deployment.md
+      - Writing a Custom Module: guides/custom-module.md
+  - Recipes:
+      - Structured AI Outputs: recipes/structured-outputs.md
+      - Rate-Limiting API Calls: recipes/rate-limiting.md
+      - Multi-Provider AI Fallback: recipes/ai-fallback.md
+      - Secrets in Production: recipes/secrets-in-production.md
+  - API Reference:
+      - forge.config: api/config.md
+      - forge.log: api/log.md
+      - forge.retry: api/retry.md
+      - forge.ai: api/ai.md
+      - forge.health: api/health.md
+      - forge.cache: api/cache.md
+      - forge.validation: api/validation.md
+      - forge.core: api/core.md
+      - forge.events: api/events.md
+      - forge.jobs: api/jobs.md
+      - forge.storage: api/storage.md
+      - forge.featureflags: api/featureflags.md
+      - forge.crud: api/crud.md
+  - FAQ: faq.md

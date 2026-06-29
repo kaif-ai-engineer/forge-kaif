@@ -1,0 +1,20 @@
+import asyncio
+import forge
+from forge.config import config
+from forge.log import log
+
+runtime = forge.Runtime()
+runtime.use_defaults()
+
+logger = log.get(__name__)
+
+
+async def main() -> None:
+    await runtime.init()
+    logger.info("Application started", environment=config.environment)
+    print("Hello from {{ project_name }}!")
+    await runtime.teardown()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

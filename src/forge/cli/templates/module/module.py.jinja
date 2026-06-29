@@ -1,0 +1,27 @@
+"""
+{{ module_name }} — Custom forge module.
+
+This module demonstrates how to build a custom forge module
+that integrates with a third-party service.
+"""
+from forge.core import ForgeModule, Runtime
+from forge.health import HealthResult
+
+
+class {{ PascalName }}Config:
+    """Configuration schema for the {{ module_name }} module."""
+    pass
+
+
+class {{ PascalName }}Module(ForgeModule):
+    name = "{{ module_name }}"
+    dependencies = ["config", "log"]
+
+    async def setup(self, runtime: Runtime) -> None:
+        pass
+
+    async def teardown(self) -> None:
+        pass
+
+    def health_check(self) -> HealthResult:
+        return HealthResult.ok("Custom module active")

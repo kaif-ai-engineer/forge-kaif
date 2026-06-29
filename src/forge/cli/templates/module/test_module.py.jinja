@@ -1,0 +1,15 @@
+import pytest
+from forge.core import ForgeRuntime
+from {{ module_name }}.module import {{ PascalName }}Module
+
+
+@pytest.mark.asyncio
+async def test_{{ module_name }}_module_lifecycle() -> None:
+    runtime = ForgeRuntime()
+    module = {{ PascalName }}Module()
+    runtime.register(module)
+    await runtime.init()
+    try:
+        assert module.health_check().status == "ok"
+    finally:
+        await runtime.teardown()
