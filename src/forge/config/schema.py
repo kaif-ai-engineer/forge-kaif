@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings
 
@@ -69,6 +71,18 @@ class JobsConfig(BaseModel):
     redis: RedisJobsConfig = Field(default_factory=RedisJobsConfig)
 
 
+class RedisFeatureFlagsConfig(BaseModel):
+    url: str | None = Field(default=None, description="Redis connection URL")
+    key_prefix: str = Field(default="forge:featureflags:")
+    max_connections: int = Field(default=10, ge=1)
+
+
+class FeatureFlagsConfig(BaseModel):
+    backend: str = Field(default="memory", pattern=r"^(memory|redis)$")
+    flags: list[dict[str, Any]] = Field(default_factory=list, description="Pre-loaded flag definitions")
+    redis: RedisFeatureFlagsConfig = Field(default_factory=RedisFeatureFlagsConfig)
+
+
 class ConfigModuleConfig(BaseModel):
     extra_env_files: list[str] = Field(default_factory=list)
 
@@ -89,5 +103,6 @@ class ForgeConfig(BaseSettings):
     ai: AIConfig = Field(default_factory=AIConfig)
     retry: RetryConfig = Field(default_factory=RetryConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
+    featureflags: FeatureFlagsConfig = Field(default_factory=FeatureFlagsConfig)
     health: HealthConfig = Field(default_factory=HealthConfig)
     jobs: JobsConfig = Field(default_factory=JobsConfig)

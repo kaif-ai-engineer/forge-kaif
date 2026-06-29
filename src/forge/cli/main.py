@@ -10,16 +10,17 @@ app = typer.Typer(
 console = Console()
 
 # Import command handlers
-from forge.cli.commands import add, check, init, new, run
+from forge.cli.commands import add, check, featureflag, init, new, run
 
 # Add commands directly to main app
 app.command(name="init")(init.init_command)
 app.command(name="add")(add.add_command)
 app.command(name="run")(run.run_command)
 
-# Add sub-apps for nested subcommands: check, new
+# Add sub-apps for nested subcommands: check, new, featureflag
 app.add_typer(check.app, name="check", help="Validate configuration.")
 app.add_typer(new.app, name="new", help="Scaffold new custom module.")
+app.add_typer(featureflag.app, name="featureflag", help="Manage feature flags.")
 
 
 @app.callback(invoke_without_command=True)
