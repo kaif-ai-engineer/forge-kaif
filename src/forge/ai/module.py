@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from forge.ai.adapters.anthropic import AnthropicAdapter
 from forge.ai.adapters.gemini import GeminiAdapter
 from forge.ai.adapters.mock import MockAdapter
+from forge.ai.adapters.ollama import OllamaAdapter
 from forge.ai.adapters.openai import OpenAIAdapter
 from forge.ai.router import ModelRouter
 from forge.core.module import ForgeModule, HealthResult
@@ -214,6 +215,11 @@ class AIModule(ForgeModule):
             timeout=self._config_ai.timeout,
         )
         self._router.register("gemini*", gemini_adapter)
+
+        ollama_adapter = OllamaAdapter(
+            timeout=self._config_ai.timeout,
+        )
+        self._router.register("ollama*", ollama_adapter)
 
         mock_adapter = MockAdapter()
         self._router.register("*", mock_adapter)

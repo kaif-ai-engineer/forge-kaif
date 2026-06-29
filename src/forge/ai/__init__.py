@@ -18,6 +18,7 @@ from forge.ai.adapters.anthropic import AnthropicAdapter
 from forge.ai.adapters.base import BaseAdapter
 from forge.ai.adapters.gemini import GeminiAdapter
 from forge.ai.adapters.mock import MockAdapter
+from forge.ai.adapters.ollama import OllamaAdapter
 from forge.ai.adapters.openai import OpenAIAdapter
 from forge.ai.exceptions import (
     AIError,
@@ -121,6 +122,7 @@ __all__ = [
     "Message",
     "MockAdapter",
     "ModelNotFoundError",
+    "OllamaAdapter",
     "ModelRouter",
     "OpenAIAdapter",
     "RateLimitError",

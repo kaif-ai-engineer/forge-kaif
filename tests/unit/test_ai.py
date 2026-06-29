@@ -19,6 +19,7 @@ from forge.ai import (
     MockAdapter,
     ModelNotFoundError,
     ModelRouter,
+    OllamaAdapter,
     OpenAIAdapter,
     StreamChunk,
     StructuredOutputError,
@@ -510,3 +511,64 @@ async def test_gemini_adapter_stream_mock() -> None:
     assert "[mock gemini chunk]" in chunks[0].delta
     assert chunks[0].finish_reason == "stop"
     assert chunks[0].provider == "gemini"
+
+
+# 29. Test OllamaAdapter provider property
+def test_ollama_adapter_provider() -> None:
+    adapter = OllamaAdapter(mock=True)
+    assert adapter.provider == "ollama"
+
+
+# 30. Test OllamaAdapter complete mock fallback
+@pytest.mark.asyncio
+async def test_ollama_adapter_complete_mock() -> None:
+    from forge.ai.models import CompletionRequest
+
+    adapter = OllamaAdapter(mock=True)
+    req = CompletionRequest(model="ollama/llama3", messages=[Message.user("hi")])
+    res = await adapter.complete(req)
+
+    assert res.content == "[mock ollama response]"
+    assert res.provider == "ollama"
+    assert res.usage is not None
+    assert res.usage.input_tokens > 0
+
+
+# 31. Test OllamaAdapter stream mock fallback
+@pytest.mark.asyncio
+async def test_ollama_adapter_stream_mock() -> None:
+    from forge.ai.models import CompletionRequest
+
+    adapter = OllamaAdapter(mock=True)
+    req = CompletionRequest(model="ollama/llama3", messages=[Message.user("hi")])
+    chunks = []
+    async for chunk in adapter.stream(req):
+        assert isinstance(chunk, StreamChunk)
+        chunks.append(chunk)
+
+    assert len(chunks) == 1
+    assert chunks[0].delta == "[mock ollama chunk]"
+    assert chunks[0].finish_reason == "stop"
+    assert chunks[0].provider == "ollama"
+
+
+# 32. Test OllamaAdapter list_models returns empty when httpx not installed
+@pytest.mark.asyncio
+async def test_ollama_adapter_list_models_no_httpx() -> None:
+    adapter = OllamaAdapter(mock=True)
+    models = await adapter.list_models()
+    assert models == []
+
+
+# 33. Test OllamaAdapter resolution via ModelRouter
+def test_ollama_adapter_resolution() -> None:
+    router = ModelRouter()
+    ollama = OllamaAdapter(mock=True)
+    mock = MockAdapter()
+
+    router.register("ollama*", ollama)
+    router.register("*", mock)
+
+    assert router.resolve("ollama/llama3") is ollama
+    assert router.resolve("ollama/mistral") is ollama
+    assert router.resolve("gpt-4o") is mock
