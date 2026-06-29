@@ -36,3 +36,15 @@ class EventError(ForgeError):
 
 class HealthCheckError(ForgeError):
     """Raised when a health check fails critically."""
+
+
+class JobError(ForgeError):
+    """Base exception for job-related errors."""
+
+
+class JobNotFoundError(JobError):
+    """Raised when a job is not found."""
+
+
+class JobExecutionError(JobError):
+    """Raised when a job execution fails."""

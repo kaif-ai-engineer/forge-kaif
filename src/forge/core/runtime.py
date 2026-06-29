@@ -148,6 +148,13 @@ class ForgeRuntime:
         except ImportError:
             pass
 
+        try:
+            from forge.jobs.module import JobsModule
+
+            self.register(JobsModule())
+        except ImportError:
+            pass
+
         return self
 
     def get(self, module_type: type[ForgeModule]) -> ForgeModule:

@@ -55,6 +55,20 @@ class HealthConfig(BaseModel):
     include_details: bool = Field(default=True)
 
 
+class RedisJobsConfig(BaseModel):
+    url: str | None = Field(default=None, description="Redis connection URL")
+    key_prefix: str = Field(default="forge:jobs:")
+    max_connections: int = Field(default=10, ge=1)
+
+
+class JobsConfig(BaseModel):
+    backend: str = Field(default="memory", pattern=r"^(memory|redis)$")
+    default_retry: int = Field(default=3, ge=0)
+    concurrency: int = Field(default=10, ge=1)
+    retry_backoff_base: float = Field(default=1.0, ge=0)
+    redis: RedisJobsConfig = Field(default_factory=RedisJobsConfig)
+
+
 class ConfigModuleConfig(BaseModel):
     extra_env_files: list[str] = Field(default_factory=list)
 
@@ -76,3 +90,4 @@ class ForgeConfig(BaseSettings):
     retry: RetryConfig = Field(default_factory=RetryConfig)
     cache: CacheConfig = Field(default_factory=CacheConfig)
     health: HealthConfig = Field(default_factory=HealthConfig)
+    jobs: JobsConfig = Field(default_factory=JobsConfig)
