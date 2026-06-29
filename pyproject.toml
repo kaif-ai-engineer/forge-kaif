@@ -36,7 +36,10 @@ forge = "forge.cli.main:main"
 openai = ["openai>=1.0"]
 anthropic = ["anthropic>=0.20"]
 redis = ["redis>=5.0"]
-all = ["forge-runtime[openai,anthropic,redis]"]
+s3 = ["boto3>=1.28"]
+gcs = ["google-cloud-storage>=2.0"]
+azure = ["azure-storage-blob>=12.0"]
+all = ["forge-runtime[openai,anthropic,redis,s3,gcs,azure]"]
 
 [project.urls]
 Homepage = "https://github.com/forge-runtime/forge"
@@ -60,7 +63,8 @@ ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D200"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/**" = ["S101", "ANN201", "ANN001", "PLR2004", "ARG001", "PERF401"]
+"tests/**" = ["S101", "ANN201", "ANN001", "PLR2004", "ARG001", "PERF401", "ASYNC240", "ASYNC230"]
+"src/forge/storage/**" = ["ASYNC230", "ASYNC240", "S108"]
 
 [tool.ruff.format]
 
