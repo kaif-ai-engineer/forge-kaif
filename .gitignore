@@ -24,3 +24,4 @@ internal_docs/
 .coverage
 .coverage.*
 htmlcov/
+docs/site/
