@@ -494,13 +494,19 @@ async def test_gemini_adapter_fallback() -> None:
     assert res.provider == "gemini"
 
 
-# 28. Test Gemini Adapter stream raises NotImplementedError
+# 28. Test Gemini Adapter stream mock fallback when SDK not installed
 @pytest.mark.asyncio
-async def test_gemini_adapter_stream_raises() -> None:
+async def test_gemini_adapter_stream_mock() -> None:
     from forge.ai.models import CompletionRequest
 
     adapter = GeminiAdapter(api_key="fake-key")
     req = CompletionRequest(model="gemini-1.5-flash", messages=[Message.user("hi")])
-    with pytest.raises(NotImplementedError):
-        async for _ in adapter.stream(req):
-            pass
+    chunks = []
+    async for chunk in adapter.stream(req):
+        assert isinstance(chunk, StreamChunk)
+        chunks.append(chunk)
+
+    assert len(chunks) == 1
+    assert "[mock gemini chunk]" in chunks[0].delta
+    assert chunks[0].finish_reason == "stop"
+    assert chunks[0].provider == "gemini"
