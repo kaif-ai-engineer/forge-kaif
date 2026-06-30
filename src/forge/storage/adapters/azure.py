@@ -214,10 +214,14 @@ class AzureAdapter:
                 f"Object does not exist: azure://{self._container_name}/{key}"
             )
 
+        account_name = self._service.account_name
+        if not account_name:
+            raise StorageConnectionError("Azure account name is not set")
+
         try:
             user_delegation_key = None
             sas_token = generate_blob_sas(
-                account_name=self._service.account_name,
+                account_name=account_name,
                 container_name=self._container_name,
                 blob_name=key,
                 account_key=self._service.credential.account_key
