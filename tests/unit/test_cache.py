@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import time
 from typing import Any
 
 import pytest
@@ -10,11 +9,11 @@ from forge.cache._state import set_cache_module
 from forge.cache.backends.memory import MemoryBackend
 from forge.cache.backends.redis import RedisBackend
 from forge.cache.decorators import cached
-from forge.cache.exceptions import CacheBackendError, CacheError
+from forge.cache.exceptions import CacheBackendError
 from forge.cache.module import CacheModule
 from forge.config.module import ConfigModule
-from forge.core.runtime import ForgeRuntime
 from forge.core.module import HealthResult
+from forge.core.runtime import ForgeRuntime
 
 
 class CustomObj:
@@ -23,9 +22,11 @@ class CustomObj:
     def __init__(self, val: int) -> None:
         self.val = val
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, CustomObj) and self.val == other.val
 
+    def __hash__(self) -> int:
+        return hash(self.val)
 
 
 @pytest.mark.asyncio
@@ -224,7 +225,7 @@ async def test_cached_decorator_namespace() -> None:
         # Verify it was cached under the namespace
         backend = cm.backend
         assert hasattr(backend, "_cache")
-        cache_keys = list(getattr(backend, "_cache").keys())
+        cache_keys = list(backend._cache.keys())
         assert any(k.startswith("custom_ns:") for k in cache_keys)
     finally:
         await runtime.teardown()
@@ -258,7 +259,7 @@ async def test_cached_decorator_invalidate() -> None:
 
         # Invalidate specific entry
         # Mypy warning workaround for dynamically attached attribute
-        invalidate_fn = getattr(fetch_item, "invalidate")
+        invalidate_fn = fetch_item.invalidate
         await invalidate_fn(42)
 
         # Call again (miss)
@@ -317,7 +318,7 @@ async def test_cached_decorator_no_runtime() -> None:
     assert call_count == 2
 
     # Invalidate should return False when no runtime/backend is configured
-    invalidate_fn = getattr(simple_fn, "invalidate")
+    invalidate_fn = simple_fn.invalidate
     assert await invalidate_fn(10) is False
 
 
@@ -332,6 +333,7 @@ def test_cache_module_health_check() -> None:
 
     # MemoryBackend initialized
     from forge.cache.backends.memory import MemoryBackend
+
     cm._backend = MemoryBackend()
     res_mem = cm.health_check()
     assert res_mem.status == HealthResult.OK

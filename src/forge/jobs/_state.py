@@ -13,5 +13,5 @@ def get_job_queue() -> JobQueue | None:
 
 
 def set_job_queue(module: JobQueue | None) -> None:
-    global _module
+    global _module  # noqa: PLW0603
     _module = module

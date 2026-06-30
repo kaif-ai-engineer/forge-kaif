@@ -48,7 +48,7 @@ def _resolve_context_value(context: EvaluationContext, attr: str) -> Any:
     if attr == "region":
         return context.region
     if attr.startswith("properties."):
-        return context.properties.get(attr[len("properties."):])
+        return context.properties.get(attr[len("properties.") :])
     return context.properties.get(attr)
 
 

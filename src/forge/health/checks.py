@@ -40,7 +40,7 @@ class HealthRegistry:
     def __init__(self) -> None:
         self._checks: dict[str, tuple[HealthCheckFn, bool]] = {}
 
-    def register(self, name: str, check_fn: HealthCheckFn, critical: bool = False) -> None:  # noqa: FBT001, FBT002
+    def register(self, name: str, check_fn: HealthCheckFn, critical: bool = False) -> None:
         """Register a health check function."""
         self._checks[name] = (check_fn, critical)
 
@@ -72,25 +72,17 @@ class HealthRegistry:
 
                 message = getattr(res, "message", message)
 
-            return HealthResult(
-                status=status,
-                message=message,
-                latency_ms=round(latency_ms, 2)
-            )
+            return HealthResult(status=status, message=message, latency_ms=round(latency_ms, 2))
         except TimeoutError:
             latency_ms = (time.monotonic() - start_time) * 1000.0
             return HealthResult(
                 status="error",
                 message=f"Check timed out after {timeout}s",
-                latency_ms=round(latency_ms, 2)
+                latency_ms=round(latency_ms, 2),
             )
         except Exception as exc:
             latency_ms = (time.monotonic() - start_time) * 1000.0
-            return HealthResult(
-                status="error",
-                message=str(exc),
-                latency_ms=round(latency_ms, 2)
-            )
+            return HealthResult(status="error", message=str(exc), latency_ms=round(latency_ms, 2))
 
     async def run_all(self, timeout: float = 5.0) -> dict[str, HealthResult]:  # noqa: ASYNC109
         """Run all registered checks concurrently."""
@@ -107,10 +99,7 @@ class HealthRegistry:
             if isinstance(res, HealthResult):
                 dict_results[name] = res
             else:
-                dict_results[name] = HealthResult(
-                    status="error",
-                    message=str(res)
-                )
+                dict_results[name] = HealthResult(status="error", message=str(res))
         return dict_results
 
     async def run_critical(self, timeout: float = 5.0) -> dict[str, HealthResult]:  # noqa: ASYNC109
@@ -129,10 +118,7 @@ class HealthRegistry:
             if isinstance(res, HealthResult):
                 dict_results[name] = res
             else:
-                dict_results[name] = HealthResult(
-                    status="error",
-                    message=str(res)
-                )
+                dict_results[name] = HealthResult(status="error", message=str(res))
         return dict_results
 
 
@@ -140,14 +126,17 @@ class HealthRegistry:
 _decorator_registered_checks: list[tuple[str, HealthCheckFn, bool]] = []
 
 
-def check(name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:  # noqa: FBT001, FBT002
+def check(name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:
     """Decorator to register a custom health check."""
+
     def decorator(fn: HealthCheckFn) -> HealthCheckFn:
         from forge.health._state import get_health_module
+
         hm = get_health_module()
         if hm is not None:
             hm.registry.register(name, fn, critical=critical)
         else:
             _decorator_registered_checks.append((name, fn, critical))
         return fn
+
     return decorator

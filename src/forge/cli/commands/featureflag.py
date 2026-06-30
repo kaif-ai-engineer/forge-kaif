@@ -23,7 +23,9 @@ def _require_module() -> Any:
     """Get the active FeatureFlagsModule or exit."""
     mod = get_featureflags_module()
     if mod is None:
-        console.print("[red]Error:[/red] FeatureFlagsModule is not initialized. Start the runtime first.")
+        console.print(
+            "[red]Error:[/red] FeatureFlagsModule is not initialized. Start the runtime first."
+        )
         raise typer.Exit(code=1)
     return mod
 
@@ -116,8 +118,12 @@ def get_flag(
 @app.command(name="set")
 def set_flag(
     name: str = typer.Argument(..., help="Flag name"),
-    default_value: str = typer.Option("false", "--default", "-d", help="Default value (JSON-encoded)"),
-    flag_type: str = typer.Option("boolean", "--type", "-t", help="Flag type: boolean, percentage, segment"),
+    default_value: str = typer.Option(
+        "false", "--default", "-d", help="Default value (JSON-encoded)"
+    ),
+    flag_type: str = typer.Option(
+        "boolean", "--type", "-t", help="Flag type: boolean, percentage, segment"
+    ),
     description: str = typer.Option("", "--description", "-desc", help="Flag description"),
 ) -> None:
     """Create or update a feature flag."""
@@ -128,7 +134,9 @@ def set_flag(
     try:
         ftype = FlagType(flag_type)
     except ValueError:
-        console.print(f"[red]Error:[/red] Invalid flag type '{flag_type}'. Choose from: boolean, percentage, segment.")
+        console.print(
+            f"[red]Error:[/red] Invalid flag type '{flag_type}'. Choose from: boolean, percentage, segment."
+        )
         raise typer.Exit(code=1)
 
     try:
@@ -172,7 +180,9 @@ def evaluate_flag(
     name: str = typer.Argument(..., help="Flag name"),
     user_id: str = typer.Option("", "--user-id", "-u", help="User ID for evaluation context"),
     region: str = typer.Option("", "--region", "-r", help="Region for evaluation context"),
-    properties: str | None = typer.Option(None, "--properties", "-p", help="JSON-encoded properties dict"),
+    properties: str | None = typer.Option(
+        None, "--properties", "-p", help="JSON-encoded properties dict"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Evaluate a feature flag for a given context."""
@@ -218,10 +228,16 @@ def evaluate_flag(
 def add_rule(
     name: str = typer.Argument(..., help="Flag name"),
     value: str = typer.Option("true", "--value", "-v", help="Rule value (JSON-encoded)"),
-    percentage: int | None = typer.Option(None, "--percentage", "-pct", help="Rollout percentage (0-100)"),
-    segment_attribute: str | None = typer.Option(None, "--segment-attr", "-sa", help="Segment attribute (user_id, region, or properties.KEY)"),
+    percentage: int | None = typer.Option(
+        None, "--percentage", "-pct", help="Rollout percentage (0-100)"
+    ),
+    segment_attribute: str | None = typer.Option(
+        None, "--segment-attr", "-sa", help="Segment attribute (user_id, region, or properties.KEY)"
+    ),
     segment_operator: str = typer.Option("eq", "--segment-op", "-so", help="Segment operator"),
-    segment_values: str | None = typer.Option(None, "--segment-values", "-sv", help="Segment values (comma-separated)"),
+    segment_values: str | None = typer.Option(
+        None, "--segment-values", "-sv", help="Segment values (comma-separated)"
+    ),
 ) -> None:
     """Add an evaluation rule to an existing flag."""
     import asyncio

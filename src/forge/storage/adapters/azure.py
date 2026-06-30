@@ -170,7 +170,7 @@ class AzureAdapter:
             blobs = self._container_client.list_blobs(name_starts_with=key_prefix)
             for blob in blobs:
                 name: str = blob.name
-                if not recursive and "/" in name[len(key_prefix):].lstrip("/"):
+                if not recursive and "/" in name[len(key_prefix) :].lstrip("/"):
                     continue
                 items.append(self._file_info_from_blob(blob))
         except Exception as exc:
@@ -214,10 +214,14 @@ class AzureAdapter:
                 f"Object does not exist: azure://{self._container_name}/{key}"
             )
 
+        account_name = self._service.account_name
+        if not account_name:
+            raise StorageConnectionError("Azure account name is not set")
+
         try:
             user_delegation_key = None
             sas_token = generate_blob_sas(
-                account_name=self._service.account_name,
+                account_name=account_name,
                 container_name=self._container_name,
                 blob_name=key,
                 account_key=self._service.credential.account_key

@@ -25,7 +25,9 @@ def check_config(config_path: Path, fix: bool) -> None:
 
     if not config_path.exists():
         console.print(f"[red]Error: Configuration file '{config_path}' not found.[/red]")
-        console.print("Run `forge init` to scaffold a new project or create a configuration file manually.")
+        console.print(
+            "Run `forge init` to scaffold a new project or create a configuration file manually."
+        )
         raise typer.Exit(code=1)
 
     try:
@@ -88,7 +90,9 @@ def check_config(config_path: Path, fix: bool) -> None:
         if redis_url:
             console.print("  [green]✓[/green] REDIS_URL: set")
         else:
-            console.print("  [red]✗[/red] REDIS_URL: not set (required by forge.cache when backend=redis)")
+            console.print(
+                "  [red]✗[/red] REDIS_URL: not set (required by forge.cache when backend=redis)"
+            )
             issues.append(
                 {
                     "key": "REDIS_URL",
@@ -117,7 +121,9 @@ def check_config(config_path: Path, fix: bool) -> None:
 
 @app.command(name="config")
 def check_command(
-    config_path: Path = typer.Option("forge.config.toml", "--config", "-c", help="Path to config file"),
+    config_path: Path = typer.Option(
+        "forge.config.toml", "--config", "-c", help="Path to config file"
+    ),
     fix: bool = typer.Option(False, "--fix", help="Attempt to fix issues"),
 ) -> None:
     """

@@ -13,7 +13,9 @@ console = Console()
 @app.command(name="module")
 def new_command(
     module_name: str = typer.Argument(..., help="Name of the custom module"),
-    output_dir: Path = typer.Option(Path("src"), "--output-dir", "-o", help="Output directory for module"),
+    output_dir: Path = typer.Option(
+        Path("src"), "--output-dir", "-o", help="Output directory for module"
+    ),
 ) -> None:
     """
     Generate a scaffold for a custom forge module.
@@ -38,9 +40,15 @@ def new_command(
 
     try:
         pkg_resources = resources.files("forge.cli")
-        init_tmpl = (pkg_resources / "templates" / "module" / "__init__.py.jinja").read_text(encoding="utf-8")
-        module_tmpl = (pkg_resources / "templates" / "module" / "module.py.jinja").read_text(encoding="utf-8")
-        test_tmpl = (pkg_resources / "templates" / "module" / "test_module.py.jinja").read_text(encoding="utf-8")
+        init_tmpl = (pkg_resources / "templates" / "module" / "__init__.py.jinja").read_text(
+            encoding="utf-8"
+        )
+        module_tmpl = (pkg_resources / "templates" / "module" / "module.py.jinja").read_text(
+            encoding="utf-8"
+        )
+        test_tmpl = (pkg_resources / "templates" / "module" / "test_module.py.jinja").read_text(
+            encoding="utf-8"
+        )
     except Exception as err:
         console.print(f"[red]Error loading templates:[/red] {err}")
         raise typer.Exit(code=1) from err

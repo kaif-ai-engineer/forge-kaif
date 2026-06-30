@@ -70,7 +70,6 @@ plugins:
             show_root_toc_entry: true
             show_category_heading: true
             show_bases: true
-            show_inherited_diagram: true
             annotations_path: brief
             line_length: 88
             separate_signature: true

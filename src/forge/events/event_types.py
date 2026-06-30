@@ -33,6 +33,7 @@ RETRY_EXHAUSTED = "retry.exhausted"
 # delivers payloads as plain ``**kwargs`` dicts to preserve loose
 # coupling between emitter and subscriber.
 
+
 class EmptyPayload(TypedDict):
     """Events that carry no data beyond the event name."""
 

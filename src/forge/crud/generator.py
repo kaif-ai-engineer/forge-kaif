@@ -44,9 +44,7 @@ def _build_env() -> jinja2.Environment:
     """Build and return the Jinja2 template environment."""
     templates = resources.files("forge.crud") / "templates"
     if not templates.is_dir():
-        raise TemplateNotFoundError(
-            f"CRUD templates directory not found at {templates}"
-        )
+        raise TemplateNotFoundError(f"CRUD templates directory not found at {templates}")
     loader = jinja2.FileSystemLoader(str(templates))
     try:
         env = jinja2.Environment(
@@ -171,18 +169,10 @@ def _classify_fields(
             )
         )
 
-    response_fields = [
-        f
-        for f in all_infos
-        if not (f.is_soft_delete and not config.soft_delete)
-    ]
+    response_fields = [f for f in all_infos if not (f.is_soft_delete and not config.soft_delete)]
 
     create_fields = [
-        f
-        for f in all_infos
-        if not f.is_primary_key
-        and not f.is_timestamp
-        and not f.is_soft_delete
+        f for f in all_infos if not f.is_primary_key and not f.is_timestamp and not f.is_soft_delete
     ]
 
     update_fields = create_fields
@@ -332,7 +322,9 @@ class CrudGenerator:
         else:
             self._config = CrudGeneratorConfig(
                 schema_name=schema.__name__,
-                operations=operations if operations is not None else {
+                operations=operations
+                if operations is not None
+                else {
                     CrudOperation.CREATE,
                     CrudOperation.LIST,
                     CrudOperation.READ,

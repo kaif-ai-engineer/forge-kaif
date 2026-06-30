@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
-from forge import ConfigModule, ForgeRuntime, HealthModule, ForgeConfig
-from forge.health import health_router, check, HealthResult
+from forge import ConfigModule, ForgeRuntime, HealthModule
+from forge.health import HealthResult, check, health_router
 from forge.health.router import liveness, readiness
 
 
@@ -25,6 +24,7 @@ async def test_health_not_initialized(app: FastAPI) -> None:
     """Liveness and readiness return 503 before runtime initialization."""
     # Ensure health module is not set (clean state)
     from forge.health._state import set_health_module
+
     set_health_module(None)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -62,7 +62,7 @@ async def test_health_and_readiness_basic(app: FastAPI) -> None:
             # 2. Readiness probe (/ready)
             res_ready = await ac.get("/ready")
             assert res_ready.status_code == 200
-            
+
             data = res_ready.json()
             assert data["status"] == "healthy"
             assert "checks" in data
@@ -76,6 +76,7 @@ async def test_health_and_readiness_basic(app: FastAPI) -> None:
 @pytest.mark.asyncio
 async def test_custom_check_decorator(app: FastAPI) -> None:
     """A custom check registered via decorator is run during readiness."""
+
     # Register decorator check
     @check("custom_decorated", critical=True)
     async def dummy_check() -> HealthResult:
@@ -243,22 +244,27 @@ async def test_configurable_paths() -> None:
     await runtime.init()
 
     try:
-        with config_mod.override({"health": {"health_path": "/my-liveness", "ready_path": "/my-readiness"}}):
+        with config_mod.override(
+            {"health": {"health_path": "/my-liveness", "ready_path": "/my-readiness"}}
+        ):
             from forge.health.module import HealthModule as HMClass
+
             health_module = runtime.get(HMClass)
 
             # Update paths on health_router before including it in the app
             for route in health_router.routes:
                 endpoint = getattr(route, "endpoint", None)
                 if endpoint == liveness:
-                    setattr(route, "path", health_module.health_path)
+                    route.path = health_module.health_path
                 elif endpoint == readiness:
-                    setattr(route, "path", health_module.ready_path)
+                    route.path = health_module.ready_path
 
             custom_app = FastAPI()
             custom_app.include_router(health_router)
 
-            async with AsyncClient(transport=ASGITransport(app=custom_app), base_url="http://test") as ac:
+            async with AsyncClient(
+                transport=ASGITransport(app=custom_app), base_url="http://test"
+            ) as ac:
                 res_liveness = await ac.get("/my-liveness")
                 assert res_liveness.status_code == 200
                 assert res_liveness.json() == {"status": "healthy"}
@@ -271,20 +277,21 @@ async def test_configurable_paths() -> None:
         for route in health_router.routes:
             endpoint = getattr(route, "endpoint", None)
             if endpoint == liveness:
-                setattr(route, "path", "/health")
+                route.path = "/health"
             elif endpoint == readiness:
-                setattr(route, "path", "/ready")
+                route.path = "/ready"
         await runtime.teardown()
 
 
 @pytest.mark.asyncio
 async def test_module_health_checks_integration(app: FastAPI) -> None:
     """Verify other modules' health checks are automatically collected and run."""
-    from forge.core.module import ForgeModule, HealthResult as CoreHealthResult
+    from forge.core.module import ForgeModule
+    from forge.core.module import HealthResult as CoreHealthResult
 
     class DummyModule(ForgeModule):
         name = "dummy_module"
-        
+
         def health_check(self) -> CoreHealthResult:
             return CoreHealthResult.degraded("Impaired database connections")
 

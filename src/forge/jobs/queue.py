@@ -81,44 +81,34 @@ class QueueBackend(ABC):
     """Abstract base class for job queue storage backends."""
 
     @abstractmethod
-    async def enqueue(self, job: Job) -> None:
-        ...
+    async def enqueue(self, job: Job) -> None: ...
 
     @abstractmethod
-    async def dequeue(self, queue: str) -> Job | None:
-        ...
+    async def dequeue(self, queue: str) -> Job | None: ...
 
     @abstractmethod
-    async def size(self, queue: str) -> int:
-        ...
+    async def size(self, queue: str) -> int: ...
 
     @abstractmethod
-    async def get_job(self, job_id: str) -> Job | None:
-        ...
+    async def get_job(self, job_id: str) -> Job | None: ...
 
     @abstractmethod
-    async def update_job(self, job: Job) -> None:
-        ...
+    async def update_job(self, job: Job) -> None: ...
 
     @abstractmethod
-    async def enqueue_dead(self, job: Job) -> None:
-        ...
+    async def enqueue_dead(self, job: Job) -> None: ...
 
     @abstractmethod
-    async def dead_letter_size(self) -> int:
-        ...
+    async def dead_letter_size(self) -> int: ...
 
     @abstractmethod
-    async def dead_letter_jobs(self) -> list[Job]:
-        ...
+    async def dead_letter_jobs(self) -> list[Job]: ...
 
     @abstractmethod
-    async def requeue_dead(self, job_id: str) -> Job | None:
-        ...
+    async def requeue_dead(self, job_id: str) -> Job | None: ...
 
     @abstractmethod
-    async def close(self) -> None:
-        ...
+    async def close(self) -> None: ...
 
 
 class MemoryBackend(QueueBackend):
@@ -441,10 +431,14 @@ class JobQueue:
             func = self._registry.get(job.func_name)
             if func is None:
                 job.status = JobStatus.FAILED
-                job.result = JobResult(error=RuntimeError(f"Job function '{job.func_name}' not registered"))
+                job.result = JobResult(
+                    error=RuntimeError(f"Job function '{job.func_name}' not registered")
+                )
                 job.finished_at = time.monotonic()
                 await self._backend.enqueue_dead(job)
-                _logger.error("Job %s: function '%s' not registered, sent to DLQ", job.job_id, job.func_name)
+                _logger.error(
+                    "Job %s: function '%s' not registered, sent to DLQ", job.job_id, job.func_name
+                )
                 return
 
             try:

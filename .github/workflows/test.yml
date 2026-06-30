@@ -40,7 +40,7 @@ jobs:
             uv-${{ runner.os }}-${{ matrix.python-version }}-
 
       - name: Install dependencies
-        run: uv pip install --system -e ".[all]"
+        run: uv pip install --system -e ".[all,dev]"
 
       - name: Run unit tests
         run: pytest tests/unit --timeout=30 -v

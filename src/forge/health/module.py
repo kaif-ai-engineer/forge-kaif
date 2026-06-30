@@ -40,6 +40,7 @@ class HealthModule(ForgeModule):
         """Dynamically fetch the health configuration section."""
         if self._runtime:
             from forge.config.module import ConfigModule
+
             try:
                 config_module = cast("ConfigModule", self._runtime.get(ConfigModule))
                 return getattr(config_module.config, "health", None)
@@ -107,6 +108,7 @@ class HealthModule(ForgeModule):
 
         # Configurable paths: update router paths dynamically
         from forge.health.router import health_router, liveness, readiness
+
         health_path = self.health_path
         ready_path = self.ready_path
 
@@ -125,15 +127,17 @@ class HealthModule(ForgeModule):
         set_health_module(None)
         self._runtime = None
 
-    def register(self, name: str, check: HealthCheckFn, critical: bool = False) -> None:  # noqa: FBT001, FBT002
+    def register(self, name: str, check: HealthCheckFn, critical: bool = False) -> None:
         """Register a custom health check."""
         self._registry.register(name, check, critical=critical)
 
-    def check(self, name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:  # noqa: FBT001, FBT002
+    def check(self, name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:
         """Decorator to register a custom health check function."""
+
         def decorator(fn: HealthCheckFn) -> HealthCheckFn:
             self._registry.register(name, fn, critical=critical)
             return fn
+
         return decorator
 
     async def check_all(self) -> dict[str, dict[str, Any]]:
@@ -158,6 +162,7 @@ class HealthModule(ForgeModule):
         # 2. Collect module health checks (synchronous)
         if self._runtime:
             import time
+
             for module in self._runtime._container.initialization_order():
                 if module.name == self.name:
                     continue

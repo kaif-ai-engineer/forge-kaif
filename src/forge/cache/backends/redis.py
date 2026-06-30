@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import pickle
-from typing import Any
+from typing import Any, cast
 
 import redis.asyncio as aioredis
 
@@ -30,8 +30,8 @@ class RedisBackend:
         self._prefix = key_prefix
         self._max_connections = max_connections
         self._default_ttl = default_ttl
-        self._pool: aioredis.ConnectionPool[Any] | None = None
-        self._client: aioredis.Redis[Any] | None = None
+        self._pool: aioredis.ConnectionPool | None = None
+        self._client: aioredis.Redis | None = None
 
     @property
     def url(self) -> str:
@@ -52,7 +52,7 @@ class RedisBackend:
             )
             self._client = aioredis.Redis(connection_pool=self._pool)
             # Verify connectivity
-            await self._client.ping()
+            await self._client.ping()  # type: ignore[misc,unused-ignore]
         except Exception as exc:
             logger.warning("Failed to connect to Redis at %s: %s", self._url, exc)
             self._client = None
@@ -63,7 +63,7 @@ class RedisBackend:
         """Close connection pool and release resources."""
         if self._client:
             try:
-                await self._client.aclose()  # type: ignore[attr-defined]
+                await self._client.aclose()
             except Exception as exc:
                 logger.warning("Error closing Redis client: %s", exc)
         if self._pool:
@@ -109,7 +109,7 @@ class RedisBackend:
             raw = await self._client.get(self._prefixed_key(key))
             if raw is None:
                 return None
-            return self._deserialize(raw)
+            return self._deserialize(cast("bytes", raw))
         except Exception as exc:
             logger.warning("Redis GET failed for key %s: %s", key, exc)
             raise CacheBackendError(f"Redis GET failed: {exc}") from exc

@@ -62,7 +62,9 @@ class LocalFilesystemAdapter:
         try:
             shutil.copy2(str(src), str(dst))
         except OSError as exc:
-            raise StorageUploadError(f"Failed to upload {local_path} -> {remote_path}: {exc}") from exc
+            raise StorageUploadError(
+                f"Failed to upload {local_path} -> {remote_path}: {exc}"
+            ) from exc
 
         ct = content_type or detect_content_type(local_path)
         stat = dst.stat()
@@ -95,7 +97,9 @@ class LocalFilesystemAdapter:
         try:
             shutil.copy2(str(src), str(dst))
         except OSError as exc:
-            raise StorageDownloadError(f"Failed to download {remote_path} -> {local_path}: {exc}") from exc
+            raise StorageDownloadError(
+                f"Failed to download {remote_path} -> {local_path}: {exc}"
+            ) from exc
 
         return str(dst.resolve())
 
