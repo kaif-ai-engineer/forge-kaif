@@ -603,11 +603,12 @@ class TestCrudModule:
         health = module.health_check()
         assert health.status == "ok"
 
-    def test_setup_and_teardown(self) -> None:
+    @pytest.mark.asyncio
+    async def test_setup_and_teardown(self) -> None:
         module = CrudModule()
         # setup and teardown should not raise
-        module.setup(None)  # type: ignore[arg-type]
-        module.teardown()
+        await module.setup(None)  # type: ignore[arg-type]
+        await module.teardown()
 
 
 # ── Tests: Integration ─────────────────────────────────────────────────────

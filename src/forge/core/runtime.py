@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import enum
 import logging
 import signal
 from collections.abc import Awaitable, Callable
@@ -14,6 +15,16 @@ from forge.core.module import ForgeModule, ModuleLifecycleState
 _log = logging.getLogger(__name__)
 
 ShutdownHook = Callable[[], Awaitable[Any]]
+
+
+class _RuntimeState(enum.Enum):
+    """Internal state machine for the runtime lifecycle."""
+
+    IDLE = "IDLE"
+    INITIALIZING = "INITIALIZING"
+    READY = "READY"
+    TEARING_DOWN = "TEARING_DOWN"
+    STOPPED = "STOPPED"
 
 
 class ForgeRuntime:
@@ -51,8 +62,7 @@ class ForgeRuntime:
         return cls._active
 
     def __init__(self) -> None:
-        self._initialized = False
-        self._shutting_down = False
+        self._state = _RuntimeState.IDLE
         self._shutdown_timeout: float = 30.0
         self._container = Container()
         self._events = EventBus()
@@ -77,12 +87,12 @@ class ForgeRuntime:
     @property
     def is_initialized(self) -> bool:
         """Return ``True`` after :meth:`init` completes successfully."""
-        return self._initialized
+        return self._state is _RuntimeState.READY
 
     @property
     def is_shutting_down(self) -> bool:
         """Return ``True`` during graceful shutdown."""
-        return self._shutting_down
+        return self._state is _RuntimeState.TEARING_DOWN
 
     # ------------------------------------------------------------------
     # Module registration
@@ -197,10 +207,16 @@ class ForgeRuntime:
         ----------
         shutdown_timeout:
             Seconds to wait for graceful shutdown before forcible stop.
-        """
-        if self._initialized:
-            raise ForgeError("Runtime is already initialised.")
 
+        Raises
+        ------
+        ForgeError
+            If the runtime is already initialized or a module fails to set up.
+        """
+        if self._state is not _RuntimeState.IDLE:
+            raise ForgeError(f"Runtime cannot be initialised in state {self._state.value}.")
+
+        self._state = _RuntimeState.INITIALIZING
         self._shutdown_timeout = shutdown_timeout
         self._loop = asyncio.get_running_loop()
 
@@ -222,7 +238,7 @@ class ForgeRuntime:
         for hook in self._ready_hooks:
             await hook()
 
-        self._initialized = True
+        self._state = _RuntimeState.READY
         ForgeRuntime._active = self
 
     async def teardown(self) -> None:
@@ -231,9 +247,9 @@ class ForgeRuntime:
 
         Safe to call multiple times; subsequent calls are no-ops.
         """
-        if self._shutting_down:
+        if self._state in (_RuntimeState.STOPPED, _RuntimeState.TEARING_DOWN):
             return
-        self._shutting_down = True
+        self._state = _RuntimeState.TEARING_DOWN
 
         await self._events.emit("runtime.shutdown")
         for hook in self._shutdown_hooks:
@@ -257,7 +273,7 @@ class ForgeRuntime:
             except Exception:
                 _log.exception("Error tearing down module '%s'", module.name)
 
-        self._initialized = False
+        self._state = _RuntimeState.STOPPED
         if ForgeRuntime._active is self:
             ForgeRuntime._active = None
 
@@ -283,7 +299,7 @@ class ForgeRuntime:
 
     def _handle_signal(self, sig: signal.Signals) -> None:
         _log.info("Received signal %s, initiating graceful shutdown...", sig.name)
-        if self._loop is not None and not self._shutting_down:
+        if self._loop is not None and self._state is _RuntimeState.READY:
             asyncio.ensure_future(self._shutdown_with_timeout(), loop=self._loop)  # noqa: RUF006
 
     async def _shutdown_with_timeout(self) -> None:

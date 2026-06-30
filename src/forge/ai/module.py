@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -24,6 +25,7 @@ class AIModule(ForgeModule):
     dependencies: ClassVar[list[str]] = ["config", "retry"]
 
     def __init__(self) -> None:
+        super().__init__()
         self._router: ModelRouter | None = None
         self._config_ai: Any = None
 
@@ -249,9 +251,8 @@ class AIModule(ForgeModule):
             if adapter.provider == "mock":
                 return HealthResult.ok()
 
-            import asyncio
-
             from forge.ai.models import CompletionRequest, Message
+            from forge.core.async_bridge import run_async_health_check
 
             async def _ping() -> None:
                 req = CompletionRequest(
@@ -261,7 +262,7 @@ class AIModule(ForgeModule):
                 )
                 await asyncio.wait_for(adapter.complete(req), timeout=5.0)
 
-            self._run_sync(_ping())
+            run_async_health_check(_ping())
             return HealthResult.ok()
         except Exception as e:
             provider_name = adapter.provider if "adapter" in locals() and adapter else "unknown"
@@ -286,17 +287,3 @@ class AIModule(ForgeModule):
             return None
         val = getattr(self._config_ai, "gemini_api_key", None)
         return val.get_secret_value() if val is not None else None
-
-    def _run_sync(self, coro: Any) -> Any:
-        import asyncio
-
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return asyncio.run(coro)
-
-        import concurrent.futures
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(asyncio.run, coro)
-            return future.result()

@@ -20,6 +20,7 @@ class CacheModule(ForgeModule):
     dependencies: ClassVar[list[str]] = ["config"]
 
     def __init__(self) -> None:
+        super().__init__()
         self._backend: CacheBackend | None = None
         self._runtime: Runtime | None = None
 
@@ -137,15 +138,8 @@ class CacheModule(ForgeModule):
         from forge.cache.backends.redis import RedisBackend
 
         if isinstance(self._backend, RedisBackend):
-            import redis
+            from forge.core.redis_health import check_redis_health
 
-            try:
-                # Use standard synchronous redis client for a quick sync ping
-                client = redis.from_url(self._backend.url, socket_timeout=1.0)
-                if client.ping():
-                    return HealthResult(HealthResult.OK, "Redis backend is healthy")
-                return HealthResult.error("Redis ping failed")
-            except Exception as exc:
-                return HealthResult.error(f"Redis backend unhealthy: {exc}")
+            return check_redis_health(self._backend.url, label="Redis cache")
 
         return HealthResult.ok()

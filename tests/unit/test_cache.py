@@ -400,7 +400,8 @@ async def test_redis_backend_health_check() -> None:
         cm._backend = redis_backend
         res_good = cm.health_check()
         assert res_good.status == HealthResult.OK
-        assert "Redis backend is healthy" in (res_good.message or "")
+        assert "Redis" in (res_good.message or "")
+        assert "healthy" in (res_good.message or "")
     except CacheBackendError:
         # Skip if local Redis not available
         pass

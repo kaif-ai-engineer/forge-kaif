@@ -225,6 +225,7 @@ class RetryModule(ForgeModule):
     dependencies: ClassVar[list[str]] = ["config"]
 
     def __init__(self) -> None:
+        super().__init__()
         self._config_retry: RetryConfig | None = None
 
     async def setup(self, runtime: ForgeRuntime) -> None:

@@ -39,7 +39,7 @@ class GeminiAdapter(BaseAdapter):
             import google.generativeai as genai
 
             if self._api_key:
-                genai.configure(api_key=self._api_key)
+                genai.configure(api_key=self._api_key)  # type: ignore[attr-defined,unused-ignore]
             self._client = genai
         except ImportError:
             _logger.warning("google-generativeai package not installed — using mock fallback")
@@ -153,7 +153,9 @@ class GeminiAdapter(BaseAdapter):
                 request_options={"timeout": self._timeout},
             )
         except Exception as exc:
-            _raise_gemini_error(exc, "starting Gemini stream")
+            _raise_gemini_error(
+                exc, "starting Gemini stream", default_factory=StreamInterruptedError
+            )
 
         try:
             async for chunk in stream_resp:
@@ -204,7 +206,7 @@ class GeminiAdapter(BaseAdapter):
                         provider="gemini",
                     )
         except Exception as exc:
-            _raise_gemini_stream_error(exc)
+            _raise_gemini_error(exc, "Gemini stream", default_factory=StreamInterruptedError)
 
     def count_tokens(self, text: str) -> int:
         return TokenCounter.count_tokens(text)
@@ -236,32 +238,36 @@ def _map_gemini_finish_reason(reason: Any) -> str:
     return _finish_reason_map.get(reason_str, reason_str.lower())
 
 
-def _raise_gemini_error(exc: Exception, context: str = "Gemini API") -> None:
-    """Raise the appropriate exception based on the Gemini error."""
-    err_msg = str(exc)
-    if "429" in err_msg or "resource exhausted" in err_msg.lower():
-        raise RateLimitError(f"Gemini API rate limit exceeded: {exc}") from exc
-    if "403" in err_msg or "api key not valid" in err_msg.lower() or "401" in err_msg:
-        raise AIProviderError(f"Gemini API authentication failed: {exc}") from exc
-    if "404" in err_msg or "model not found" in err_msg.lower():
-        raise ModelNotFoundError(f"Gemini model not found: {exc}") from exc
-    if "safety" in err_msg.lower() or "blocked" in err_msg.lower():
-        raise AIProviderError(f"Gemini content blocked by safety filters: {exc}") from exc
-    raise AIProviderError(f"{context} error: {exc}") from exc
+def _raise_gemini_error(
+    exc: Exception,
+    context: str = "Gemini API",
+    *,
+    default_factory: type[Exception] | None = None,
+) -> None:
+    """
+    Classify a Gemini exception and raise the appropriate forge error.
 
-
-def _raise_gemini_stream_error(exc: Exception) -> None:
-    """Raise stream-specific or general Gemini error."""
-    err_msg = str(exc)
-    if "429" in err_msg or "resource exhausted" in err_msg.lower():
+    Parameters
+    ----------
+    exc:
+        The original exception from the Gemini SDK.
+    context:
+        Human-readable description of the failing operation.
+    default_factory:
+        Exception type to raise for unrecognised errors.
+        Defaults to ``AIProviderError``.
+    """
+    err_msg = str(exc).lower()
+    if "429" in err_msg or "resource exhausted" in err_msg:
         raise RateLimitError(f"Gemini API rate limit exceeded: {exc}") from exc
-    if "403" in err_msg or "api key not valid" in err_msg.lower() or "401" in err_msg:
+    if "403" in err_msg or "api key not valid" in err_msg or "401" in err_msg:
         raise AIProviderError(f"Gemini API authentication failed: {exc}") from exc
-    if "404" in err_msg or "model not found" in err_msg.lower():
+    if "404" in err_msg or "model not found" in err_msg:
         raise ModelNotFoundError(f"Gemini model not found: {exc}") from exc
-    if "safety" in err_msg.lower() or "blocked" in err_msg.lower():
+    if "safety" in err_msg or "blocked" in err_msg:
         raise AIProviderError(f"Gemini content blocked by safety filters: {exc}") from exc
-    raise StreamInterruptedError(f"Gemini stream interrupted: {exc}") from exc
+    exc_type = default_factory or AIProviderError
+    raise exc_type(f"{context} error: {exc}") from exc
 
 
 async def _mock_stream(request: CompletionRequest) -> AsyncIterator[StreamChunk]:

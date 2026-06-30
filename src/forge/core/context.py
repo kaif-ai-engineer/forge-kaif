@@ -6,7 +6,8 @@ from typing import Any, Self
 
 _current_trace_id: ContextVar[str] = ContextVar("_current_trace_id", default="")
 _current_span_id: ContextVar[str] = ContextVar("_current_span_id", default="")
-_baggage: ContextVar[dict[str, Any]] = ContextVar("_baggage", default={})  # noqa: B039
+_empty_baggage: dict[str, Any] = {}
+_baggage: ContextVar[dict[str, Any]] = ContextVar("_baggage", default=_empty_baggage)
 
 
 def generate_trace_id() -> str:

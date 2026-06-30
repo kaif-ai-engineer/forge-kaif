@@ -25,6 +25,7 @@ class FeatureFlagsModule(ForgeModule):
     dependencies: ClassVar[list[str]] = ["config"]
 
     def __init__(self) -> None:
+        super().__init__()
         self._store: FlagStore | None = None
         self._evaluator: FlagEvaluator | None = None
         self._runtime: Runtime | None = None
@@ -145,15 +146,9 @@ class FeatureFlagsModule(ForgeModule):
         """Check health of Redis-backed flag store."""
         if not store.is_connected:
             return HealthResult.error("Redis flag store not connected")
-        try:
-            import redis
+        from forge.core.redis_health import check_redis_health
 
-            client = redis.from_url(store.url, socket_timeout=1.0)
-            if client.ping():
-                return HealthResult(HealthResult.OK, "Redis flag store is healthy")
-            return HealthResult.error("Redis ping failed")
-        except Exception as exc:
-            return HealthResult.error(f"Redis flag store unhealthy: {exc}")
+        return check_redis_health(store.url, label="Redis flag store")
 
     def health_check(self) -> HealthResult:
         """Check the health status of the feature flags backend."""

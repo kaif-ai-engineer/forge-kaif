@@ -175,6 +175,7 @@ class JobsModule(ForgeModule):
         redis_key_prefix: str = "forge:jobs:",
         redis_max_connections: int = 10,
     ) -> None:
+        super().__init__()
         self._backend_type = backend
         self._default_retry = default_retry
         self._concurrency = concurrency

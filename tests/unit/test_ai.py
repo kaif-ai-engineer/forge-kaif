@@ -500,7 +500,7 @@ async def test_gemini_adapter_fallback() -> None:
 async def test_gemini_adapter_stream_mock() -> None:
     from forge.ai.models import CompletionRequest
 
-    adapter = GeminiAdapter(api_key="fake-key")
+    adapter = GeminiAdapter(api_key=None)
     req = CompletionRequest(model="gemini-1.5-flash", messages=[Message.user("hi")])
     chunks = []
     async for chunk in adapter.stream(req):
