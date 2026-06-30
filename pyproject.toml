@@ -47,6 +47,7 @@ all = ["forge-runtime[openai,anthropic,ollama,redis,s3,gcs,azure]"]
 dev = [
     "ruff>=0.6",
     "mypy>=1.11",
+    "pre-commit>=4.0",
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "pytest-benchmark>=5.0",

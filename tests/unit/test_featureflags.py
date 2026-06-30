@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 
 from forge.featureflags._state import get_featureflags_module, set_featureflags_module
 from forge.featureflags.evaluator import FlagEvaluator, _consistent_hash
-from forge.featureflags.exceptions import FlagNotFoundError, FlagStoreError
+from forge.featureflags.exceptions import FlagNotFoundError
 from forge.featureflags.models import (
     EvaluationContext,
     EvaluationReason,
@@ -16,7 +14,6 @@ from forge.featureflags.models import (
     SegmentRule,
 )
 from forge.featureflags.store import MemoryFlagStore
-
 
 # ---------------------------------------------------------------------------
 # _consistent_hash
@@ -332,7 +329,7 @@ class TestEvaluatorSegment:
 
     @pytest.mark.asyncio
     async def test_segment_neq_operator(self) -> None:
-        """neq excludes matching values, so non-matching users get the default."""
+        """Neq excludes matching values, so non-matching users get the default."""
         store = MemoryFlagStore()
         await store.set_flag(
             FlagDefinition(

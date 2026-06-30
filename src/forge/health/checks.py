@@ -40,7 +40,7 @@ class HealthRegistry:
     def __init__(self) -> None:
         self._checks: dict[str, tuple[HealthCheckFn, bool]] = {}
 
-    def register(self, name: str, check_fn: HealthCheckFn, critical: bool = False) -> None:  # noqa: FBT001, FBT002
+    def register(self, name: str, check_fn: HealthCheckFn, critical: bool = False) -> None:
         """Register a health check function."""
         self._checks[name] = (check_fn, critical)
 
@@ -126,7 +126,7 @@ class HealthRegistry:
 _decorator_registered_checks: list[tuple[str, HealthCheckFn, bool]] = []
 
 
-def check(name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:  # noqa: FBT001, FBT002
+def check(name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:
     """Decorator to register a custom health check."""
 
     def decorator(fn: HealthCheckFn) -> HealthCheckFn:

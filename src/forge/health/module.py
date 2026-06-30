@@ -127,11 +127,11 @@ class HealthModule(ForgeModule):
         set_health_module(None)
         self._runtime = None
 
-    def register(self, name: str, check: HealthCheckFn, critical: bool = False) -> None:  # noqa: FBT001, FBT002
+    def register(self, name: str, check: HealthCheckFn, critical: bool = False) -> None:
         """Register a custom health check."""
         self._registry.register(name, check, critical=critical)
 
-    def check(self, name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:  # noqa: FBT001, FBT002
+    def check(self, name: str, critical: bool = False) -> Callable[[HealthCheckFn], HealthCheckFn]:
         """Decorator to register a custom health check function."""
 
         def decorator(fn: HealthCheckFn) -> HealthCheckFn:

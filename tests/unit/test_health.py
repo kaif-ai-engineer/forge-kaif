@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
-from forge import ConfigModule, ForgeRuntime, HealthModule, ForgeConfig
-from forge.health import health_router, check, HealthResult
+from forge import ConfigModule, ForgeRuntime, HealthModule
+from forge.health import HealthResult, check, health_router
 from forge.health.router import liveness, readiness
 
 
@@ -256,9 +255,9 @@ async def test_configurable_paths() -> None:
             for route in health_router.routes:
                 endpoint = getattr(route, "endpoint", None)
                 if endpoint == liveness:
-                    setattr(route, "path", health_module.health_path)
+                    route.path = health_module.health_path
                 elif endpoint == readiness:
-                    setattr(route, "path", health_module.ready_path)
+                    route.path = health_module.ready_path
 
             custom_app = FastAPI()
             custom_app.include_router(health_router)
@@ -278,16 +277,17 @@ async def test_configurable_paths() -> None:
         for route in health_router.routes:
             endpoint = getattr(route, "endpoint", None)
             if endpoint == liveness:
-                setattr(route, "path", "/health")
+                route.path = "/health"
             elif endpoint == readiness:
-                setattr(route, "path", "/ready")
+                route.path = "/ready"
         await runtime.teardown()
 
 
 @pytest.mark.asyncio
 async def test_module_health_checks_integration(app: FastAPI) -> None:
     """Verify other modules' health checks are automatically collected and run."""
-    from forge.core.module import ForgeModule, HealthResult as CoreHealthResult
+    from forge.core.module import ForgeModule
+    from forge.core.module import HealthResult as CoreHealthResult
 
     class DummyModule(ForgeModule):
         name = "dummy_module"
