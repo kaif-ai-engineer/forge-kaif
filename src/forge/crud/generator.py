@@ -29,25 +29,19 @@ from forge.crud.models import (
     _to_snake,
 )
 
-_JINJA_ENV: jinja2.Environment | None = None
+_PRIMARY_KEY_NAMES = frozenset({"id", "pk", "uid", "uuid", "slug"})
+_TIMESTAMP_NAMES = frozenset({"created_at", "updated_at", "created", "updated"})
+_SOFT_DELETE_NAMES = frozenset({"deleted_at", "is_deleted", "deleted", "is_active"})
 
 
-def _get_template_env() -> jinja2.Environment:
-    """Get or create the Jinja2 template environment for CRUD templates."""
-    global _JINJA_ENV  # noqa: PLW0603
-    if _JINJA_ENV is None:
-        _JINJA_ENV = _build_env()
-    return _JINJA_ENV
-
-
-def _build_env() -> jinja2.Environment:
-    """Build and return the Jinja2 template environment."""
+def _build_template_env() -> jinja2.Environment:
+    """Build and return the Jinja2 template environment for CRUD templates."""
     templates = resources.files("forge.crud") / "templates"
     if not templates.is_dir():
         raise TemplateNotFoundError(f"CRUD templates directory not found at {templates}")
     loader = jinja2.FileSystemLoader(str(templates))
     try:
-        env = jinja2.Environment(
+        return jinja2.Environment(
             loader=loader,
             undefined=jinja2.StrictUndefined,
             autoescape=jinja2.select_autoescape(disabled_extensions=("jinja",)),
@@ -58,12 +52,6 @@ def _build_env() -> jinja2.Environment:
         raise CrudGenerationError(
             f"Failed to initialise Jinja2 template environment: {exc}"
         ) from exc
-    return env
-
-
-_PRIMARY_KEY_NAMES = frozenset({"id", "pk", "uid", "uuid", "slug"})
-_TIMESTAMP_NAMES = frozenset({"created_at", "updated_at", "created", "updated"})
-_SOFT_DELETE_NAMES = frozenset({"deleted_at", "is_deleted", "deleted", "is_active"})
 
 
 def _infer_primary_key(fields: dict[str, Any]) -> str:
@@ -372,7 +360,7 @@ class CrudGenerator:
         Returns:
             The rendered source code as a string.
         """
-        env = _get_template_env()
+        env = _build_template_env()
         try:
             template = env.get_template(template_name)
         except jinja2.TemplateNotFound as exc:

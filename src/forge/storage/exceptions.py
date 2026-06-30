@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from forge.core.exceptions import ForgeError
 
-class StorageError(Exception):
+
+class StorageError(ForgeError):
     """Base exception for all storage-related errors."""
 
 

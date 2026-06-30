@@ -264,6 +264,7 @@ class EventsModule(ForgeModule):
     dependencies: ClassVar[list[str]] = []
 
     def __init__(self, history_size: int = 200) -> None:
+        super().__init__()
         self._wrapper: EventBusWrapper | None = None
         self._runtime: Runtime | None = None
         self._core_bus: EventBus | None = None

@@ -42,6 +42,7 @@ class LogModule(ForgeModule):
     dependencies: ClassVar[list[str]] = ["config"]
 
     def __init__(self) -> None:
+        super().__init__()
         self._buffer: _BufferedHandler | None = None
         self._queue: Queue[logging.LogRecord] | None = None
         self._listener: QueueListener | None = None

@@ -29,6 +29,7 @@ class ConfigModule(ForgeModule):
     name = "config"
 
     def __init__(self) -> None:
+        super().__init__()
         self._config: ForgeConfig | None = None
 
     @property

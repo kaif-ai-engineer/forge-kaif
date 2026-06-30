@@ -52,12 +52,13 @@ class ForgeModule(ABC):
     ``dependencies``, ``setup``, ``teardown``, and ``health_check``.
     """
 
-    _lifecycle_state: ModuleLifecycleState = ModuleLifecycleState.UNREGISTERED
-
     @property
     @abstractmethod
     def name(self) -> str:
         """Unique module identifier used for DI resolution."""
+
+    def __init__(self) -> None:
+        self._lifecycle_state: ModuleLifecycleState = ModuleLifecycleState.UNREGISTERED
 
     @property
     def dependencies(self) -> list[str]:

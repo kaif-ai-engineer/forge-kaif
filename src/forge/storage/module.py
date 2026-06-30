@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from forge.core.module import ForgeModule, HealthResult
 from forge.storage.adapters.base import FileInfo, StorageBackend
@@ -18,6 +18,7 @@ class StorageModule(ForgeModule):
     dependencies: ClassVar[list[str]] = ["config"]
 
     def __init__(self) -> None:
+        super().__init__()
         self._backend: StorageBackend | None = None
         self._runtime: Runtime | None = None
 
@@ -161,25 +162,12 @@ class StorageModule(ForgeModule):
             return HealthResult(HealthResult.OK, "Local filesystem storage active")
 
         try:
+            from forge.core.async_bridge import run_async_health_check
 
             async def _ping() -> None:
                 await backend.exists("health-check-probe")
 
-            self._run_sync(_ping())
+            run_async_health_check(_ping())
             return HealthResult.ok()
         except Exception as exc:
             return HealthResult.error(f"Storage backend health check failed: {exc}")
-
-    def _run_sync(self, coro: Any) -> Any:
-        import asyncio
-
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            return asyncio.run(coro)
-
-        import concurrent.futures
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(asyncio.run, coro)
-            return future.result()

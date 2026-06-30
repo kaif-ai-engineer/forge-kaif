@@ -27,6 +27,7 @@ class HealthModule(ForgeModule):
     dependencies: ClassVar[list[str]] = ["config"]
 
     def __init__(self) -> None:
+        super().__init__()
         self._registry = HealthRegistry()
         self._runtime: Runtime | None = None
 
