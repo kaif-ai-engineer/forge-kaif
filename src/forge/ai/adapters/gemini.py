@@ -39,7 +39,7 @@ class GeminiAdapter(BaseAdapter):
             import google.generativeai as genai
 
             if self._api_key:
-                genai.configure(api_key=self._api_key)
+                genai.configure(api_key=self._api_key)  # type: ignore[attr-defined,unused-ignore]
             self._client = genai
         except ImportError:
             _logger.warning("google-generativeai package not installed — using mock fallback")
