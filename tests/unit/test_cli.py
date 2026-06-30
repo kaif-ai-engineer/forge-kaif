@@ -163,6 +163,7 @@ def test_run_command_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         os.environ["OPENAI_API_KEY"] = "sk-test-key"
 
         from typing import Any
+
         mock_uvicorn = types.ModuleType("uvicorn")
         run_calls: list[tuple[str, dict[str, Any]]] = []
 

@@ -107,6 +107,7 @@ class EventBusWrapper:
 
         Wildcard patterns use shell-style globbing (``fnmatch``).
         """
+
         def _register(h: Handler) -> Handler:
             if _is_wildcard(event):
                 self._wildcard_handlers.setdefault(event, set()).add(h)
@@ -287,6 +288,7 @@ class EventsModule(ForgeModule):
         self._core_bus = runtime._events
         if self._core_bus is None:
             from forge.core.exceptions import ForgeError
+
             raise ForgeError("Runtime does not have an _events attribute.")
 
         self._wrapper = EventBusWrapper(

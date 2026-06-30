@@ -32,8 +32,7 @@ def cached(
     def decorator(func: F) -> F:
         if not inspect.iscoroutinefunction(func):
             raise TypeError(
-                f"@cached requires an async function. "
-                f"{func.__qualname__} is synchronous."
+                f"@cached requires an async function. {func.__qualname__} is synchronous."
             )
 
         @functools.wraps(func)

@@ -96,9 +96,8 @@ class FeatureFlagsModule(ForgeModule):
                 await self._store.close()
             except Exception as exc:
                 import logging
-                logging.getLogger(__name__).warning(
-                    "Error closing flag store: %s", exc
-                )
+
+                logging.getLogger(__name__).warning("Error closing flag store: %s", exc)
         self._store = None
         self._evaluator = None
         self._runtime = None
@@ -148,6 +147,7 @@ class FeatureFlagsModule(ForgeModule):
             return HealthResult.error("Redis flag store not connected")
         try:
             import redis
+
             client = redis.from_url(store.url, socket_timeout=1.0)
             if client.ping():
                 return HealthResult(HealthResult.OK, "Redis flag store is healthy")

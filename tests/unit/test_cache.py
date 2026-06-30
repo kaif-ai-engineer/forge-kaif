@@ -27,7 +27,6 @@ class CustomObj:
         return isinstance(other, CustomObj) and self.val == other.val
 
 
-
 @pytest.mark.asyncio
 async def test_memory_backend_ops() -> None:
     """Test basic operations on MemoryBackend."""
@@ -332,6 +331,7 @@ def test_cache_module_health_check() -> None:
 
     # MemoryBackend initialized
     from forge.cache.backends.memory import MemoryBackend
+
     cm._backend = MemoryBackend()
     res_mem = cm.health_check()
     assert res_mem.status == HealthResult.OK

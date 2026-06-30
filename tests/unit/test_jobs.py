@@ -60,8 +60,12 @@ def test_job_status_values() -> None:
 
 def test_job_to_dict() -> None:
     j = Job(
-        job_id="abc", queue="q", func_name="f",
-        args=(), kwargs={}, max_retries=3,
+        job_id="abc",
+        queue="q",
+        func_name="f",
+        args=(),
+        kwargs={},
+        max_retries=3,
     )
     d = j.to_dict()
     assert d["job_id"] == "abc"

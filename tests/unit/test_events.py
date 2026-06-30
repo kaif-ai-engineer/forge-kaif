@@ -223,6 +223,7 @@ class TestEventBusWrapper:
                 nonlocal started
                 started += 1
                 await asyncio.sleep(0.05)
+
             return slow
 
         handlers = [await make_slow() for _ in range(5)]

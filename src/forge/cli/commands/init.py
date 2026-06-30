@@ -14,8 +14,12 @@ console = Console()
 @app.command(name="init")
 def init_command(
     project_name: str = typer.Argument(..., help="Name of the project to create"),
-    template: str = typer.Option("basic", "--template", "-t", help="Project template (basic, fastapi)"),
-    directory: Path = typer.Option(Path.cwd(), "--dir", "-d", help="Directory to create project in"),
+    template: str = typer.Option(
+        "basic", "--template", "-t", help="Project template (basic, fastapi)"
+    ),
+    directory: Path = typer.Option(
+        Path.cwd(), "--dir", "-d", help="Directory to create project in"
+    ),
 ) -> None:
     """
     Scaffold a new forge project.

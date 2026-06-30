@@ -16,6 +16,7 @@ async def liveness(response: Response) -> dict[str, str]:
     Returns 200 if process is alive. Returns 503 if not initialized.
     """
     from forge.health._state import get_health_module
+
     health_module = get_health_module()
     if health_module is None:
         response.status_code = 503
@@ -31,6 +32,7 @@ async def readiness(response: Response) -> dict[str, Any]:
     Runs critical health checks. Returns 200 if all pass, 503 otherwise.
     """
     from forge.health._state import get_health_module
+
     health_module = get_health_module()
     if health_module is None:
         response.status_code = 503

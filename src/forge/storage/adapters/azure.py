@@ -170,7 +170,7 @@ class AzureAdapter:
             blobs = self._container_client.list_blobs(name_starts_with=key_prefix)
             for blob in blobs:
                 name: str = blob.name
-                if not recursive and "/" in name[len(key_prefix):].lstrip("/"):
+                if not recursive and "/" in name[len(key_prefix) :].lstrip("/"):
                     continue
                 items.append(self._file_info_from_blob(blob))
         except Exception as exc:

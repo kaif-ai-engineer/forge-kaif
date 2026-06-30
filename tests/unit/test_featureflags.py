@@ -132,7 +132,9 @@ class TestEvaluatorBoolean:
             )
         )
         evaluator = FlagEvaluator(store)
-        result = await evaluator.evaluate("feature-x", EvaluationContext(user_id="u1", region="us-east"))
+        result = await evaluator.evaluate(
+            "feature-x", EvaluationContext(user_id="u1", region="us-east")
+        )
         assert result.value is True
         assert result.reason == EvaluationReason.OVERRIDE
 
@@ -241,7 +243,9 @@ class TestEvaluatorSegment:
                 rules=[
                     FlagRule(
                         value=True,
-                        segments=[SegmentRule(attribute="user_id", operator="eq", values=["beta-user"])],
+                        segments=[
+                            SegmentRule(attribute="user_id", operator="eq", values=["beta-user"])
+                        ],
                     )
                 ],
             )
@@ -262,7 +266,9 @@ class TestEvaluatorSegment:
                 rules=[
                     FlagRule(
                         value=True,
-                        segments=[SegmentRule(attribute="user_id", operator="eq", values=["beta-user"])],
+                        segments=[
+                            SegmentRule(attribute="user_id", operator="eq", values=["beta-user"])
+                        ],
                     )
                 ],
             )
@@ -283,7 +289,11 @@ class TestEvaluatorSegment:
                 rules=[
                     FlagRule(
                         value=True,
-                        segments=[SegmentRule(attribute="region", operator="eq", values=["us-east", "us-west"])],
+                        segments=[
+                            SegmentRule(
+                                attribute="region", operator="eq", values=["us-east", "us-west"]
+                            )
+                        ],
                     )
                 ],
             )
@@ -304,7 +314,13 @@ class TestEvaluatorSegment:
                 rules=[
                     FlagRule(
                         value=True,
-                        segments=[SegmentRule(attribute="properties.role", operator="eq", values=["admin", "engineer"])],
+                        segments=[
+                            SegmentRule(
+                                attribute="properties.role",
+                                operator="eq",
+                                values=["admin", "engineer"],
+                            )
+                        ],
                     )
                 ],
             )
@@ -326,17 +342,23 @@ class TestEvaluatorSegment:
                 rules=[
                     FlagRule(
                         value=True,
-                        segments=[SegmentRule(attribute="region", operator="neq", values=["internal"])],
+                        segments=[
+                            SegmentRule(attribute="region", operator="neq", values=["internal"])
+                        ],
                     )
                 ],
             )
         )
         evaluator = FlagEvaluator(store)
         # Internal user does not match "neq internal" → falls to default (False)
-        result = await evaluator.evaluate("not-internal", EvaluationContext(user_id="u1", region="internal"))
+        result = await evaluator.evaluate(
+            "not-internal", EvaluationContext(user_id="u1", region="internal")
+        )
         assert result.value is False
         # External user matches "neq internal" → gets rule value (True)
-        result2 = await evaluator.evaluate("not-internal", EvaluationContext(user_id="u2", region="external"))
+        result2 = await evaluator.evaluate(
+            "not-internal", EvaluationContext(user_id="u2", region="external")
+        )
         assert result2.value is True
 
 
@@ -405,7 +427,11 @@ class TestEvaluatorEdgeCases:
                 rules=[
                     FlagRule(
                         value=True,
-                        segments=[SegmentRule(attribute="properties.tier", operator="eq", values=["premium"])],
+                        segments=[
+                            SegmentRule(
+                                attribute="properties.tier", operator="eq", values=["premium"]
+                            )
+                        ],
                     )
                 ],
             )
@@ -427,7 +453,9 @@ class TestEvaluatorEdgeCases:
                 rules=[
                     FlagRule(
                         value=True,
-                        segments=[SegmentRule(attribute="properties.vip", operator="eq", values=["True"])],
+                        segments=[
+                            SegmentRule(attribute="properties.vip", operator="eq", values=["True"])
+                        ],
                     )
                 ],
             )

@@ -79,7 +79,9 @@ class RedisFeatureFlagsConfig(BaseModel):
 
 class FeatureFlagsConfig(BaseModel):
     backend: str = Field(default="memory", pattern=r"^(memory|redis)$")
-    flags: list[dict[str, Any]] = Field(default_factory=list, description="Pre-loaded flag definitions")
+    flags: list[dict[str, Any]] = Field(
+        default_factory=list, description="Pre-loaded flag definitions"
+    )
     redis: RedisFeatureFlagsConfig = Field(default_factory=RedisFeatureFlagsConfig)
 
 

@@ -112,6 +112,7 @@ def job(
 
         await send_welcome_email.enqueue(user_id=123)
     """
+
     def decorator(fn: Callable[..., Any]) -> JobDefinition:
         return JobDefinition(func=fn, queue=queue, max_retries=retry)
 
@@ -142,6 +143,7 @@ def schedule(
         async def daily_report():
             ...
     """
+
     def decorator(fn: Callable[..., Any]) -> ScheduleDefinition:
         return ScheduleDefinition(func=fn, cron=cron, queue=queue)
 

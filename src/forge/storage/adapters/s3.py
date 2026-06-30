@@ -162,9 +162,7 @@ class S3Adapter:
             self._client.delete_object(Bucket=self._bucket, Key=key)
             return True
         except Exception as exc:
-            raise StorageDeleteError(
-                f"Failed to delete s3://{self._bucket}/{key}: {exc}"
-            ) from exc
+            raise StorageDeleteError(f"Failed to delete s3://{self._bucket}/{key}: {exc}") from exc
 
     async def list(
         self,
@@ -182,7 +180,7 @@ class S3Adapter:
                 contents = page.get("Contents", [])
                 for obj in contents:
                     obj_key: str = obj["Key"]
-                    if not recursive and "/" in obj_key[len(key_prefix):].lstrip("/"):
+                    if not recursive and "/" in obj_key[len(key_prefix) :].lstrip("/"):
                         continue
                     last_mod = obj.get("LastModified")
                     items.append(

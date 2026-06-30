@@ -26,10 +26,13 @@ app.add_typer(featureflag.app, name="featureflag", help="Manage feature flags.")
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
-    version: bool = typer.Option(False, "--version", "-v", help="Show version and exit.", is_eager=True),
+    version: bool = typer.Option(
+        False, "--version", "-v", help="Show version and exit.", is_eager=True
+    ),
 ) -> None:
     if version:
         from forge._version import __version__
+
         console.print(f"forge-runtime [bold green]{__version__}[/bold green]")
         raise typer.Exit
     if ctx.invoked_subcommand is None:

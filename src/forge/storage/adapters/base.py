@@ -45,8 +45,7 @@ class StorageBackend(Protocol):
         content_type: str | None = None,
         metadata: dict[str, str] | None = None,
         multipart_threshold: int = 100 * 1024 * 1024,
-    ) -> FileInfo:
-        ...
+    ) -> FileInfo: ...
 
     @abc.abstractmethod
     async def download(
@@ -55,15 +54,13 @@ class StorageBackend(Protocol):
         local_path: str,
         *,
         overwrite: bool = False,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     @abc.abstractmethod
     async def delete(
         self,
         remote_path: str,
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
     @abc.abstractmethod
     async def list(
@@ -71,15 +68,13 @@ class StorageBackend(Protocol):
         prefix: str = "",
         *,
         recursive: bool = True,
-    ) -> list[FileInfo]:
-        ...
+    ) -> list[FileInfo]: ...
 
     @abc.abstractmethod
     async def exists(
         self,
         remote_path: str,
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
     @abc.abstractmethod
     async def presigned_url(
@@ -87,5 +82,4 @@ class StorageBackend(Protocol):
         remote_path: str,
         *,
         expiration: int = 3600,
-    ) -> str:
-        ...
+    ) -> str: ...

@@ -55,7 +55,9 @@ MODULES: dict[str, dict[str, Any]] = {
 @app.command(name="add")
 def add_command(
     module: str = typer.Argument(..., help="Module name to add (e.g., cache, ai)"),
-    config_path: Path = typer.Option("forge.config.toml", "--config", "-c", help="Path to config file"),
+    config_path: Path = typer.Option(
+        "forge.config.toml", "--config", "-c", help="Path to config file"
+    ),
 ) -> None:
     """
     Add a forge module to the project.
@@ -83,11 +85,17 @@ def add_command(
 
     # If the key or wrapped forge.key is in config_data, warn and skip
     has_module = False
-    if module_key in config_data or ("forge" in config_data and isinstance(config_data["forge"], dict) and module_key in config_data["forge"]):
+    if module_key in config_data or (
+        "forge" in config_data
+        and isinstance(config_data["forge"], dict)
+        and module_key in config_data["forge"]
+    ):
         has_module = True
 
     if has_module:
-        console.print(f"[yellow]Warning: Module '{module}' is already configured in '{config_path}'.[/yellow]")
+        console.print(
+            f"[yellow]Warning: Module '{module}' is already configured in '{config_path}'.[/yellow]"
+        )
         raise typer.Exit
 
     # Build the TOML snippet to append
@@ -97,7 +105,7 @@ def add_command(
         if isinstance(v, str):
             lines.append(f'{k} = "{v}"')
         elif isinstance(v, bool):
-            lines.append(f'{k} = {"true" if v else "false"}')
+            lines.append(f"{k} = {'true' if v else 'false'}")
         elif isinstance(v, (int, float)):
             lines.append(f"{k} = {v}")
         elif isinstance(v, list):

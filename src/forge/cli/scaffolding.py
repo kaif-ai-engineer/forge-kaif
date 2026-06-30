@@ -13,7 +13,9 @@ def render_template(content: str, variables: dict[str, Any]) -> str:
     return template.render(**variables)
 
 
-def copy_template_dir(src: resources.abc.Traversable, dest: Path, variables: dict[str, Any]) -> None:
+def copy_template_dir(
+    src: resources.abc.Traversable, dest: Path, variables: dict[str, Any]
+) -> None:
     """Recursively copy and render traversable templates."""
     dest.mkdir(parents=True, exist_ok=True)
     for item in src.iterdir():
