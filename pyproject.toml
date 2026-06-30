@@ -101,7 +101,7 @@ module = "forge.*"
 ignore_missing_imports = false
 
 [[tool.mypy.overrides]]
-module = ["anthropic", "openai", "redis"]
+module = ["anthropic", "openai", "redis", "google.generativeai"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
