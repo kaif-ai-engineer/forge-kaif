@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import socket
 from datetime import UTC, datetime
 
 import pytest
@@ -210,6 +211,14 @@ class TestMemoryBackend:
 # ── RedisBackend ─────────────────────────────────────────────────────
 
 
+def redis_available() -> bool:
+    try:
+        with socket.create_connection(("localhost", 6379), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
 class TestRedisBackend:
     @pytest.mark.asyncio
     async def test_redis_connect_refused(self) -> None:
@@ -217,11 +226,13 @@ class TestRedisBackend:
         await b.connect()
         assert b._pool is not None
 
+    @pytest.mark.skipif(not redis_available(), reason="Redis not available")
     @pytest.mark.asyncio
     async def test_get_job_nonexistent(self) -> None:
         b = RedisBackend()
         assert await b.get_job("nonexistent") is None
 
+    @pytest.mark.skipif(not redis_available(), reason="Redis not available")
     @pytest.mark.asyncio
     async def test_dead_letter_requeue_nonexistent(self) -> None:
         b = RedisBackend()

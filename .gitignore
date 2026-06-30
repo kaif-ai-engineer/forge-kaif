@@ -3,7 +3,11 @@ __pycache__/
 *$py.class
 *.so
 .env
-.env.*
+.env.local
+.env.production
+.env.development
+.env.staging
+.env.test
 .venv/
 venv/
 .ruff_cache/

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import pickle
-from typing import Any
+from typing import Any, cast
 
 import redis.asyncio as aioredis
 
@@ -52,7 +52,7 @@ class RedisBackend:
             )
             self._client = aioredis.Redis(connection_pool=self._pool)
             # Verify connectivity
-            await self._client.ping()  # type: ignore[misc]
+            await self._client.ping()  # type: ignore[misc,unused-ignore]
         except Exception as exc:
             logger.warning("Failed to connect to Redis at %s: %s", self._url, exc)
             self._client = None
@@ -109,7 +109,7 @@ class RedisBackend:
             raw = await self._client.get(self._prefixed_key(key))
             if raw is None:
                 return None
-            return self._deserialize(bytes(raw))
+            return self._deserialize(cast("bytes", raw))
         except Exception as exc:
             logger.warning("Redis GET failed for key %s: %s", key, exc)
             raise CacheBackendError(f"Redis GET failed: {exc}") from exc
