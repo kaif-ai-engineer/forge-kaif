@@ -12,7 +12,7 @@ of retry attempts. Works on async functions and as an async context manager.
 ## Installation
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ## Quick Start

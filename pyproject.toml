@@ -3,7 +3,7 @@ requires = ["hatchling>=1.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "forge-runtime"
+name = "forge-kaif"
 dynamic = ["version"]
 description = "A modular Python infrastructure runtime for config, logging, retries, AI, and more"
 readme = "README.md"
@@ -11,7 +11,7 @@ requires-python = ">=3.11"
 license = "MIT"
 keywords = ["infrastructure", "runtime", "config", "logging", "retry", "ai", "framework"]
 authors = [
-    { name = "forge-runtime", email = "hello@useforge.dev" },
+    { name = "kaif-ai-engineer", email = "hello@useforge.dev" },
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -45,7 +45,7 @@ s3 = ["boto3>=1.28"]
 gcs = ["google-cloud-storage>=2.0"]
 azure = ["azure-storage-blob>=12.0"]
 otel = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
-all = ["forge-runtime[openai,anthropic,gemini,ollama,redis,s3,gcs,azure,otel]"]
+all = ["forge-kaif[openai,anthropic,gemini,ollama,redis,s3,gcs,azure,otel]"]
 
 dev = [
     "ruff>=0.6",
@@ -60,10 +60,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/forge-runtime/forge"
+Homepage = "https://github.com/kaif-ai-engineer/forge-kaif"
 Documentation = "https://useforge.dev/docs"
-Repository = "https://github.com/forge-runtime/forge"
-Changelog = "https://github.com/forge-runtime/forge/blob/main/CHANGELOG.md"
+Repository = "https://github.com/kaif-ai-engineer/forge-kaif"
+Changelog = "https://github.com/kaif-ai-engineer/forge-kaif/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/forge"]

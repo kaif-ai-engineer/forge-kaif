@@ -6,7 +6,7 @@ We love contributions! Here's how to get started.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/forge-runtime/forge.git
+    git clone https://github.com/kaif-ai-engineer/forge-kaif.git
    cd forge
    ```
 
@@ -87,5 +87,5 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Need Help?
 
-Open a [Discussion](https://github.com/forge-runtime/forge/discussions) or
+Open a [Discussion](https://github.com/kaif-ai-engineer/forge-kaif/discussions) or
 join our [Discord](https://discord.gg/forge).

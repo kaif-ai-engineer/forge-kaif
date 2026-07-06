@@ -11,10 +11,10 @@ priority ordering.
 
 ## Installation
 
-The config module is part of the core `forge-runtime` package with no extra dependencies:
+The config module is part of the core `forge-kaif` package with no extra dependencies:
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ## Quick Start

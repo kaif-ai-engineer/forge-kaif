@@ -60,7 +60,7 @@ Package your module as a standalone package:
 name = "forge-my-module"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["forge-runtime"]
+dependencies = ["forge-kaif"]
 
 [project.entry-points."forge.plugins"]
 my_module = "forge_my_module:MyModule"

@@ -1,7 +1,7 @@
 site_name: forge
 site_description: The developer runtime for AI-era Python.
 site_url: https://useforge.dev
-repo_url: https://github.com/forge-runtime/forge
+repo_url: https://github.com/kaif-ai-engineer/forge-kaif
 edit_uri: edit/main/docs/docs/
 
 theme:
@@ -78,15 +78,15 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/forge-runtime/forge
+      link: https://github.com/kaif-ai-engineer/forge-kaif
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/forge-runtime/
+      link: https://pypi.org/project/forge-kaif/
   generator: false
 
 extra_css:
   - stylesheets/extra.css
 
-copyright: Copyright &copy; 2025 forge-runtime
+copyright: Copyright &copy; 2025 kaif-ai-engineer
 
 nav:
   - Home: index.md

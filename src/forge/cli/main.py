@@ -5,7 +5,7 @@ from rich.console import Console
 
 app = typer.Typer(
     name="forge",
-    help="forge-runtime: Python developer infrastructure framework",
+    help="forge-kaif: Python developer infrastructure framework",
 )
 console = Console()
 
@@ -33,7 +33,7 @@ def main_callback(
     if version:
         from forge._version import __version__
 
-        console.print(f"forge-runtime [bold green]{__version__}[/bold green]")
+        console.print(f"forge-kaif [bold green]{__version__}[/bold green]")
         raise typer.Exit
     if ctx.invoked_subcommand is None:
         console.print(ctx.get_help())

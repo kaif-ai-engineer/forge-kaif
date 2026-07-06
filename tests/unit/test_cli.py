@@ -24,7 +24,7 @@ def test_cli_version() -> None:
     """Test displaying the version."""
     result = runner.invoke(app, ["-v"])
     assert result.exit_code == 0
-    assert "forge-runtime" in result.stdout
+    assert "forge-kaif" in result.stdout
 
 
 def test_init_command_basic(tmp_path: Path) -> None:

@@ -10,17 +10,17 @@ This guide will take you from zero to a working forge application in under 5 min
 ## Step 1: Install
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ??? tip "Optional extras"
     Install provider-specific extras as needed:
 
     ```bash
-    pip install forge-runtime[openai]      # OpenAI support
-    pip install forge-runtime[anthropic]   # Anthropic support
-    pip install forge-runtime[ollama]      # Local Ollama support
-    pip install forge-runtime[all]         # All providers
+    pip install forge-kaif[openai]      # OpenAI support
+    pip install forge-kaif[anthropic]   # Anthropic support
+    pip install forge-kaif[ollama]      # Local Ollama support
+    pip install forge-kaif[all]         # All providers
     ```
 
 ## Step 2: Set your API key

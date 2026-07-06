@@ -60,7 +60,7 @@ def init_command(
     next_steps = (
         f"[dim]Next steps:[/dim]\n"
         f"  [cyan]cd {project_name}[/cyan]\n"
-        f"  [cyan]pip install forge-runtime[/cyan]\n"
+        f"  [cyan]pip install forge-kaif[/cyan]\n"
         f"  [cyan]cp .env.example .env[/cyan]  [dim]# Add your API keys[/dim]\n"
         f"  [cyan]python main.py[/cyan]"
     )

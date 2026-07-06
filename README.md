@@ -2,10 +2,10 @@
   <h1 align="center">forge</h1>
   <p align="center">The developer runtime for AI-era Python.</p>
   <p align="center">
-    <a href="https://pypi.org/project/forge-runtime"><img src="https://img.shields.io/pypi/v/forge-runtime" alt="PyPI"></a>
-    <a href="https://pypi.org/project/forge-runtime"><img src="https://img.shields.io/pypi/pyversions/forge-runtime" alt="Python versions"></a>
-    <a href="https://github.com/forge-runtime/forge/actions"><img src="https://img.shields.io/github/actions/workflow/status/forge-runtime/forge/test.yml?branch=main" alt="CI"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/forge-runtime/forge" alt="MIT"></a>
+    <a href="https://pypi.org/project/forge-kaif"><img src="https://img.shields.io/pypi/v/forge-kaif" alt="PyPI"></a>
+    <a href="https://pypi.org/project/forge-kaif"><img src="https://img.shields.io/pypi/pyversions/forge-kaif" alt="Python versions"></a>
+    <a href="https://github.com/kaif-ai-engineer/forge-kaif/actions"><img src="https://img.shields.io/github/actions/workflow/status/kaif-ai-engineer/forge-kaif/test.yml?branch=main" alt="CI"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/kaif-ai-engineer/forge-kaif" alt="MIT"></a>
   </p>
 </p>
 
@@ -44,7 +44,7 @@ your web framework — the reusable runtime that every Python backend service ne
 ## Quick Start
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ```python

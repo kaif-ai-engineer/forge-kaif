@@ -11,9 +11,9 @@ in-memory and Redis backends by changing configuration.
 ## Installation
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 # For Redis backend:
-pip install forge-runtime[redis]
+pip install forge-kaif[redis]
 ```
 
 ## Quick Start

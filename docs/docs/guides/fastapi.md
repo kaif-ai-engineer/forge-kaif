@@ -126,6 +126,6 @@ PORT=8000
 ## Running the App
 
 ```bash
-pip install forge-runtime[openai] fastapi uvicorn
+pip install forge-kaif[openai] fastapi uvicorn
 uvicorn main:app --reload
 ```
