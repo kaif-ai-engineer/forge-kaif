@@ -78,7 +78,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install build tools
-        run: uv pip install --system hatchling
+        run: uv pip install --system hatch
 
       - name: Sync version file with tag
         run: |
