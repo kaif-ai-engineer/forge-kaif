@@ -13,6 +13,7 @@ from forge.ai.adapters.ollama import OllamaAdapter
 from forge.ai.adapters.openai import OpenAIAdapter
 from forge.ai.router import ModelRouter
 from forge.core.module import ForgeModule, HealthResult
+from forge.core.otel import get_meter
 from forge.retry.module import RetryModule
 
 if TYPE_CHECKING:
@@ -35,6 +36,39 @@ class AIModule(ForgeModule):
         self._input_tokens = 0
         self._output_tokens = 0
         self._total_cost = 0.0
+
+        # OTel instruments (lazily created)
+        self._otel_request_counter: Any = None
+        self._otel_latency_histogram: Any = None
+        self._otel_token_counter: Any = None
+        self._otel_cost_counter: Any = None
+
+    def _ensure_otel_instruments(self) -> None:
+        if self._otel_request_counter is not None:
+            return
+        meter = get_meter()
+        if meter is None:
+            return
+        self._otel_request_counter = meter.create_counter(
+            "ai.request.count",
+            description="Total number of AI completion requests",
+            unit="1",
+        )
+        self._otel_latency_histogram = meter.create_histogram(
+            "ai.latency",
+            description="Latency of AI completion requests in milliseconds",
+            unit="ms",
+        )
+        self._otel_token_counter = meter.create_counter(
+            "ai.token.count",
+            description="Total number of tokens used across AI requests",
+            unit="1",
+        )
+        self._otel_cost_counter = meter.create_counter(
+            "ai.cost.estimate",
+            description="Estimated cost of AI requests in USD",
+            unit="USD",
+        )
 
     # ── Public API ─────────────────────────────────────────────────
 
@@ -85,15 +119,26 @@ class AIModule(ForgeModule):
                 return res
 
             try:
+                prev_input = self._input_tokens
+                prev_output = self._output_tokens
+                prev_cost = self._total_cost
+
                 validated = await enforcer.enforce(request.messages, output_schema, _complete_fn)
                 latency_ms = (time.monotonic() - start_time) * 1000.0
                 self._request_count += 1
                 self._latency_ms_history.append(latency_ms)
+                self._record_otel_metrics(
+                    latency_ms,
+                    input_delta=self._input_tokens - prev_input,
+                    output_delta=self._output_tokens - prev_output,
+                    cost_delta=self._total_cost - prev_cost,
+                )
                 return validated
             except Exception:
                 latency_ms = (time.monotonic() - start_time) * 1000.0
                 self._request_count += 1
                 self._latency_ms_history.append(latency_ms)
+                self._record_otel_metrics(latency_ms)
                 raise
         else:
             try:
@@ -101,9 +146,10 @@ class AIModule(ForgeModule):
                 latency_ms = (time.monotonic() - start_time) * 1000.0
                 response.latency_ms = latency_ms
 
-                # Update metrics
-                self._request_count += 1
-                self._latency_ms_history.append(latency_ms)
+                input_delta = 0
+                output_delta = 0
+                cost_delta = 0.0
+
                 if response.usage is not None:
                     try:
                         adapter = self.router.resolve(response.model)
@@ -114,14 +160,28 @@ class AIModule(ForgeModule):
 
                         response.cost = TokenCounter.estimate_cost(response.usage, response.model)
 
-                    self._input_tokens += response.usage.input_tokens
-                    self._output_tokens += response.usage.output_tokens
-                    self._total_cost += response.cost
+                    input_delta = response.usage.input_tokens
+                    output_delta = response.usage.output_tokens
+                    cost_delta = response.cost
+                    self._input_tokens += input_delta
+                    self._output_tokens += output_delta
+                    self._total_cost += cost_delta
+
+                # Update metrics
+                self._request_count += 1
+                self._latency_ms_history.append(latency_ms)
+                self._record_otel_metrics(
+                    latency_ms,
+                    input_delta=input_delta,
+                    output_delta=output_delta,
+                    cost_delta=cost_delta,
+                )
                 return response
             except Exception:
                 latency_ms = (time.monotonic() - start_time) * 1000.0
                 self._request_count += 1
                 self._latency_ms_history.append(latency_ms)
+                self._record_otel_metrics(latency_ms)
                 raise
 
     async def stream(self, request: CompletionRequest) -> AsyncIterator[StreamChunk]:
@@ -163,12 +223,35 @@ class AIModule(ForgeModule):
             self._input_tokens += input_tokens
             self._output_tokens += output_tokens
             self._total_cost += cost
+            self._record_otel_metrics(
+                latency_ms, input_delta=input_tokens, output_delta=output_tokens, cost_delta=cost
+            )
 
         except Exception:
             latency_ms = (time.monotonic() - start_time) * 1000.0
             self._request_count += 1
             self._latency_ms_history.append(latency_ms)
+            self._record_otel_metrics(latency_ms)
             raise
+
+    def _record_otel_metrics(
+        self,
+        latency_ms: float,
+        input_delta: int = 0,
+        output_delta: int = 0,
+        cost_delta: float = 0.0,
+    ) -> None:
+        self._ensure_otel_instruments()
+        if self._otel_request_counter is not None:
+            self._otel_request_counter.add(
+                1, {"model": str(self._config_ai.default_model if self._config_ai else "unknown")}
+            )
+        if self._otel_latency_histogram is not None:
+            self._otel_latency_histogram.record(latency_ms)
+        if self._otel_token_counter is not None and (input_delta or output_delta):
+            self._otel_token_counter.add(input_delta + output_delta, {"type": "total"})
+        if self._otel_cost_counter is not None and cost_delta:
+            self._otel_cost_counter.add(cost_delta)
 
     def get_metrics(self) -> dict[str, Any]:
         """Return the collected observability metrics."""

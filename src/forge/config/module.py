@@ -8,6 +8,7 @@ from forge.config.loaders import load_dotenv, load_toml
 from forge.config.schema import ForgeConfig
 from forge.core.exceptions import ConfigurationError
 from forge.core.module import ForgeModule, HealthResult
+from forge.core.otel import in_span
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -85,7 +86,8 @@ class ConfigModule(ForgeModule):
     # ------------------------------------------------------------------
 
     async def setup(self, _runtime: ForgeRuntime) -> None:
-        self._config = self._build_config()
+        with in_span("config-loaded", {"module": "config"}):
+            self._config = self._build_config()
 
     async def teardown(self) -> None:
         self._config = None

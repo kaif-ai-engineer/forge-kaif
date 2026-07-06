@@ -36,6 +36,7 @@ from forge.core.exceptions import (
     RuntimeNotInitializedError,
 )
 from forge.core.module import ForgeModule, HealthResult, ModuleLifecycleState
+from forge.core.otel import get_meter, get_tracer, in_span, init_otel, is_otel_available
 from forge.core.runtime import ForgeRuntime
 
 Runtime = ForgeRuntime
@@ -63,8 +64,13 @@ __all__ = [
     "generate_trace_id",
     "get_baggage",
     "get_baggage_item",
+    "get_meter",
     "get_span_id",
     "get_trace_id",
+    "get_tracer",
+    "in_span",
+    "init_otel",
+    "is_otel_available",
     "reset_baggage",
     "reset_span_id",
     "reset_trace_id",

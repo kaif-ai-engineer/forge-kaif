@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from forge.config.module import ConfigModule
 from forge.core.module import ForgeModule, HealthResult
+from forge.core.otel import init_otel
 from forge.log.context import LogContextFilter
 from forge.log.formatters import DevFormatter, JSONFormatter
 from forge.log.proxy import LoggerProxy
@@ -76,6 +77,8 @@ class LogModule(ForgeModule):
     # ── ForgeModule ────────────────────────────────────────────────
 
     async def setup(self, runtime: ForgeRuntime) -> None:
+        init_otel()
+
         config_module: ConfigModule = runtime.get(ConfigModule)  # type: ignore[assignment]
         log_cfg = config_module.config.log
 

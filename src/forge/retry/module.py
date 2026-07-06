@@ -7,6 +7,7 @@ import time
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from forge.core.module import ForgeModule, HealthResult
+from forge.core.otel import get_meter
 from forge.retry.backoff import get_backoff
 
 if TYPE_CHECKING:
@@ -56,6 +57,36 @@ class NonRetryableError(Exception):
 
 
 # ── Retry (function API + context manager) ─────────────────────────
+
+
+_retry_counter = None
+_circuit_breaker_state_counter = None
+
+
+def _get_retry_counter() -> Any:
+    global _retry_counter  # noqa: PLW0603
+    if _retry_counter is None:
+        meter = get_meter()
+        if meter is not None:
+            _retry_counter = meter.create_counter(
+                "retry.count",
+                description="Total number of retry attempts",
+                unit="1",
+            )
+    return _retry_counter
+
+
+def _get_circuit_breaker_state_counter() -> Any:
+    global _circuit_breaker_state_counter  # noqa: PLW0603
+    if _circuit_breaker_state_counter is None:
+        meter = get_meter()
+        if meter is not None:
+            _circuit_breaker_state_counter = meter.create_counter(
+                "circuit.breaker.state",
+                description="Circuit breaker state transitions",
+                unit="1",
+            )
+    return _circuit_breaker_state_counter
 
 
 class _RetryImpl:
@@ -120,6 +151,7 @@ class _RetryImpl:
         backoff_fn = get_backoff(self._backoff_strategy)
         start = time.monotonic()
         last_exc: Exception | None = None
+        retry_counter = _get_retry_counter()
 
         for attempt in range(1, self._attempts + 1):
             try:
@@ -133,6 +165,8 @@ class _RetryImpl:
                     raise
                 last_exc = e
                 if attempt < self._attempts:
+                    if retry_counter is not None:
+                        retry_counter.add(1, {"operation": _name(fn)})
                     delay = backoff_fn(attempt)
                     _logger.warning(
                         "Retry %s/%s for %r after %.2fs: %s",
@@ -160,6 +194,10 @@ class _RetryImpl:
                 attempt_count=self._attempts,
                 total_delay=time.monotonic() - self._start_time,
             ) from exc
+
+        retry_counter = _get_retry_counter()
+        if retry_counter is not None:
+            retry_counter.add(1, {"operation": "context_manager"})
 
         delay = self._backoff_fn(self._attempt_count + 1)
         self._attempt_count += 1

@@ -7,6 +7,8 @@ import traceback
 from typing import Any
 
 from forge.core.context import get_trace_id
+from forge.core.otel import get_current_span_context as _get_otel_span_context
+from forge.core.otel import is_otel_available as _otel_available
 
 _MAX_STR_LEN = 10_000
 
@@ -142,6 +144,12 @@ class JSONFormatter(logging.Formatter):
         if trace_id:
             payload["trace_id"] = trace_id
 
+        if _otel_available():
+            otel_ctx = _get_otel_span_context()
+            if otel_ctx:
+                payload.setdefault("otel_trace_id", otel_ctx["trace_id"])
+                payload.setdefault("otel_span_id", otel_ctx["span_id"])
+
         if record.exc_info and record.exc_info[0] is not None:
             payload["exception"] = "".join(traceback.format_exception(*record.exc_info))
 
@@ -178,6 +186,10 @@ class DevFormatter(logging.Formatter):
         ]
         if trace_id:
             parts.insert(2, f"{_GREY}[{trace_id[:8]}]{_RESET}")
+        elif _otel_available():
+            otel_ctx = _get_otel_span_context()
+            if otel_ctx:
+                parts.insert(2, f"{_GREY}[{otel_ctx['trace_id'][:8]}]{_RESET}")
 
         if record.exc_info and record.exc_info[0] is not None:
             exc = "".join(traceback.format_exception(*record.exc_info))
