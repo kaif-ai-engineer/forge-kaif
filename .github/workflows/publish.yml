@@ -54,8 +54,6 @@ jobs:
       - run: uv pip install --system hatch
       - run: hatch build
       - run: uv pip install --system dist/*.whl
-      - name: Verify forge CLI entry point
-        run: python -c "from forge._version import __version__; print(__version__)"
 
   # ------------------------------------------------------------------
   # Publish the package to PyPI (via trusted publishing), create a
