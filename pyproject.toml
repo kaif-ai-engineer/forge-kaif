@@ -82,6 +82,7 @@ ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D200"
 "__init__.py" = ["F401"]
 "tests/**" = ["S101", "ANN201", "ANN001", "PLR2004", "ARG001", "PERF401", "ASYNC240", "ASYNC230"]
 "src/forge/storage/**" = ["ASYNC230", "ASYNC240", "S108"]
+"examples/**" = ["T201", "ASYNC250", "ANN001", "S104"]
 
 [tool.ruff.format]
 

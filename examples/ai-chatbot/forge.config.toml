@@ -1,0 +1,21 @@
+[forge]
+environment = "development"
+debug = true
+
+[forge.log]
+level = "INFO"
+format = "dev"
+
+[forge.ai]
+default_model = "gpt-4o"
+timeout = 30
+max_tokens = 4096
+structured_output_retries = 3
+# openai_api_key is loaded from FORGE_AI_OPENAI_API_KEY env var
+
+[forge.retry]
+default_attempts = 3
+default_backoff = "exponential"
+default_base_delay = 1.0
+default_max_delay = 30.0
+default_jitter = true

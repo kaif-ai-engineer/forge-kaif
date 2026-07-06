@@ -1,0 +1,18 @@
+[forge]
+environment = "development"
+debug = true
+
+[forge.log]
+level = "INFO"
+format = "dev"
+
+[forge.cache]
+backend = "memory"
+default_ttl = 300
+memory_max_size = 500
+
+[forge.health]
+health_path = "/health"
+ready_path = "/ready"
+include_details = true
+check_timeout = 5.0
