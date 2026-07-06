@@ -1,12 +1,59 @@
 # Contributing to forge
 
-We love contributions! Here's how to get started.
+Thank you for your interest in contributing to forge! Everyone is welcome
+to participate — whether you are fixing a bug, improving documentation, or
+proposing a new feature.
+
+This project is maintained by a single maintainer who has final authority
+on roadmap, architecture, releases, and merge decisions. The guidelines
+below exist to make collaboration productive and respectful for everyone.
+
+## Before You Start
+
+- **Start with a discussion.** For significant changes — new features,
+  API design, architectural decisions — please open a
+  [Discussion](https://github.com/kaif-ai-engineer/forge-kaif/discussions)
+  first. This avoids wasted effort and ensures alignment with project
+  direction.
+
+- **Small fixes are welcome without discussion.** Bug fixes, typo
+  corrections, and documentation improvements can be submitted directly
+  as pull requests.
+
+## How to Contribute
+
+1. **Fork and branch.** Create a new branch from `main` for your work.
+
+2. **Make your changes.** Follow the project's code style (see below).
+
+3. **Run quality checks locally** before opening your PR:
+   ```bash
+   ruff format --check .
+   ruff check .
+   mypy src/forge
+   pytest
+   ```
+
+4. **Open a pull request.** Every change must come through a pull request.
+   Direct pushes to `main` are not permitted.
+
+## Pull Request Review
+
+- All pull requests are reviewed based on **quality, maintainability, and
+  project direction**.
+- **Submission does not guarantee acceptance.** The maintainer may request
+  changes or decline a PR if it does not fit the project's goals.
+- To increase the chance of acceptance:
+  - Keep changes focused and minimal.
+  - Include tests for new functionality.
+  - Update documentation and the CHANGELOG.
+  - Ensure CI passes.
 
 ## Development Setup
 
 1. Clone the repository:
    ```bash
-    git clone https://github.com/kaif-ai-engineer/forge-kaif.git
+   git clone https://github.com/kaif-ai-engineer/forge-kaif.git
    cd forge
    ```
 
@@ -19,7 +66,7 @@ We love contributions! Here's how to get started.
    ```bash
    uv venv
    source .venv/bin/activate
-   uv pip install -e ".[all]"
+   uv pip install -e ".[all,dev]"
    ```
 
 4. Verify the setup:
@@ -66,14 +113,6 @@ mypy src/forge
 - All public functions and classes must have docstrings
 - No circular dependencies between modules
 - `__init__.py` is the only public surface for each module
-
-## Submitting a Pull Request
-
-1. Create a new branch from `main`
-2. Make your changes
-3. Run linting and tests locally
-4. Push your branch and open a pull request
-5. Ensure CI passes on your PR
 
 ## Commit Messages
 

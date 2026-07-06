@@ -115,6 +115,10 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 required_plugins = ["pytest-asyncio", "pytest-benchmark"]
 
+[tool.bandit]
+exclude_dirs = ["tests", "examples", "docs", ".github"]
+skips = ["B101", "B301", "B303", "B311", "B403", "B404", "B603"]
+
 [tool.coverage.run]
 source = ["src/forge"]
 branch = true

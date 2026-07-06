@@ -11,11 +11,9 @@
 
 ---
 
-**Stop rebuilding your infrastructure. Start shipping.**
-
 forge is a modular Python runtime that eliminates the undifferentiated heavy lifting
 of backend development — config, logging, retries, AI model integration, health checks,
-caching, and more — so you can focus on building what makes your product unique.
+caching, and more.
 
 ```python
 from forge.ai import complete, Message
@@ -27,7 +25,7 @@ response = await complete(
 print(response.content)
 ```
 
-## What is forge?
+## Features
 
 forge is **not** a web framework. It is the infrastructure layer that sits **below**
 your web framework — the reusable runtime that every Python backend service needs.
@@ -41,11 +39,21 @@ your web framework — the reusable runtime that every Python backend service ne
 - **Validation** — Pydantic-integrated input validation with consistent error responses
 - **CLI** — `forge init`, `forge check config`, `forge add module`
 
-## Quick Start
+## Installation
 
 ```bash
 pip install forge-kaif
 ```
+
+With optional extras:
+
+```bash
+pip install "forge-kaif[openai]"       # OpenAI provider
+pip install "forge-kaif[all]"           # all optional providers
+pip install "forge-kaif[dev]"           # development tooling
+```
+
+## Quick Start
 
 ```python
 import asyncio
@@ -62,7 +70,7 @@ asyncio.run(main())
 
 ## Documentation
 
-Full documentation is available at [useforge.dev/docs](https://useforge.dev/docs).
+Full documentation is available at [ForgeKaif](https://kaif-ai-engineer.github.io/forge-kaif/).
 
 ## Contributing
 

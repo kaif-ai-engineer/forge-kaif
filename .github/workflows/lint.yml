@@ -30,9 +30,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: uv-lint-${{ hashFiles('pyproject.toml') }}
+          key: lint-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            uv-lint-
+            lint-
 
       - name: Install dependencies
         run: uv pip install --system -e ".[all,dev]"
