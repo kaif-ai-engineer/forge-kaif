@@ -51,7 +51,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: uv pip install --system hatchling
+      - run: uv pip install --system hatch
       - run: hatch build
       - run: uv pip install --system dist/*.whl
       - name: Verify forge CLI entry point
