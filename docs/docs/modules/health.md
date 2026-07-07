@@ -13,7 +13,7 @@ added with a simple decorator.
 ## Installation
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ## Quick Start

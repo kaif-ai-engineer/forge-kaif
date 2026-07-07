@@ -27,7 +27,7 @@ MODULES: dict[str, dict[str, Any]] = {
         "description": "AI provider module supporting OpenAI and Anthropic",
         "instructions": (
             "\nTo install AI dependencies:\n"
-            "  pip install forge-runtime[openai] or forge-runtime[anthropic]\n"
+            "  pip install forge-kaif[openai] or forge-kaif[anthropic]\n"
             "  Set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env"
         ),
     },
@@ -41,7 +41,7 @@ MODULES: dict[str, dict[str, Any]] = {
         "instructions": (
             "✓ No additional dependencies required (in-memory backend)\n\n"
             "To use Redis backend:\n"
-            "  pip install forge-runtime[redis]\n"
+            "  pip install forge-kaif[redis]\n"
             "  Set REDIS_URL in .env"
         ),
     },

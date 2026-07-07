@@ -12,7 +12,7 @@ human-readable output. Trace IDs propagate automatically across async boundaries
 ## Installation
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ## Quick Start

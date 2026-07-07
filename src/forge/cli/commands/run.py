@@ -36,8 +36,8 @@ def run_command(
         console.print("[red]Error: uvicorn is not installed.[/red]")
         console.print("To run the development server, install uvicorn:")
         console.print("  [cyan]pip install uvicorn[/cyan]")
-        console.print("Or install the full forge-runtime stack:")
-        console.print("  [cyan]pip install forge-runtime[all][/cyan]")
+        console.print("Or install the full forge-kaif stack:")
+        console.print("  [cyan]pip install forge-kaif[all][/cyan]")
         raise typer.Exit(code=1)
 
     console.print(f"Starting development server at http://{host}:{port}...")

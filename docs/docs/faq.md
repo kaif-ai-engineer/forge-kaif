@@ -18,7 +18,7 @@ dependencies between modules at the code level.
 ### How do I install forge?
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 See the [Getting Started guide](getting-started/index.md) for provider-specific extras.
@@ -118,12 +118,12 @@ aggregator. OpenTelemetry integration is planned for a future release.
 
 ### Can I contribute?
 
-Yes! See [CONTRIBUTING.md](https://github.com/forge-runtime/forge/blob/main/CONTRIBUTING.md)
+Yes! See [CONTRIBUTING.md](https://github.com/forge-kaif/forge/blob/main/CONTRIBUTING.md)
 for guidelines. All contributions are welcome — bug fixes, features, docs, examples.
 
 ### How do I report a bug?
 
-Open an issue on [GitHub](https://github.com/forge-runtime/forge/issues) with:
+Open an issue on [GitHub](https://github.com/forge-kaif/forge/issues) with:
 - A minimal reproduction
 - Expected vs. actual behavior
 - Python version and forge version

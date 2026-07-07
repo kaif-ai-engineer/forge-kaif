@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel, Field, SecretStr
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class LogConfig(BaseModel):
+class LogConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_LOG_", extra="ignore")
     level: str = Field(default="INFO", description="Log level")
     format: str = Field(default="dev", description="Output format: json or dev")
     levels: dict[str, str] = Field(default_factory=dict, description="Per-module overrides")
@@ -17,7 +18,8 @@ class CircuitBreakerConfig(BaseModel):
     recovery_time: float = Field(default=60.0, ge=0)
 
 
-class RetryConfig(BaseModel):
+class RetryConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_RETRY_", extra="ignore")
     default_attempts: int = Field(default=3, ge=1)
     default_backoff: str = Field(default="exponential", pattern=r"^(exponential|linear|constant)$")
     default_base_delay: float = Field(default=1.0, ge=0)
@@ -32,14 +34,16 @@ class RedisCacheConfig(BaseModel):
     max_connections: int = Field(default=10, ge=1)
 
 
-class CacheConfig(BaseModel):
+class CacheConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_CACHE_", extra="ignore")
     backend: str = Field(default="memory", pattern=r"^(memory|redis)$")
     default_ttl: int = Field(default=300, ge=0)
     memory_max_size: int = Field(default=1000, ge=1)
     redis: RedisCacheConfig = Field(default_factory=RedisCacheConfig)
 
 
-class AIConfig(BaseModel):
+class AIConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_AI_", extra="ignore")
     default_model: str = Field(default="gpt-4o")
     timeout: int = Field(default=30, ge=1)
     max_tokens: int = Field(default=4096, ge=1)
@@ -50,7 +54,8 @@ class AIConfig(BaseModel):
     gemini_api_key: SecretStr | None = Field(default=None)
 
 
-class HealthConfig(BaseModel):
+class HealthConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_HEALTH_", extra="ignore")
     health_path: str = Field(default="/health")
     ready_path: str = Field(default="/ready")
     check_timeout: float = Field(default=5.0, ge=0)
@@ -63,7 +68,8 @@ class RedisJobsConfig(BaseModel):
     max_connections: int = Field(default=10, ge=1)
 
 
-class JobsConfig(BaseModel):
+class JobsConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_JOBS_", extra="ignore")
     backend: str = Field(default="memory", pattern=r"^(memory|redis)$")
     default_retry: int = Field(default=3, ge=0)
     concurrency: int = Field(default=10, ge=1)
@@ -77,7 +83,8 @@ class RedisFeatureFlagsConfig(BaseModel):
     max_connections: int = Field(default=10, ge=1)
 
 
-class FeatureFlagsConfig(BaseModel):
+class FeatureFlagsConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_FEATUREFLAGS_", extra="ignore")
     backend: str = Field(default="memory", pattern=r"^(memory|redis)$")
     flags: list[dict[str, Any]] = Field(
         default_factory=list, description="Pre-loaded flag definitions"
@@ -85,7 +92,8 @@ class FeatureFlagsConfig(BaseModel):
     redis: RedisFeatureFlagsConfig = Field(default_factory=RedisFeatureFlagsConfig)
 
 
-class ConfigModuleConfig(BaseModel):
+class ConfigModuleConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="FORGE_CONFIG_", extra="ignore")
     extra_env_files: list[str] = Field(default_factory=list)
 
 

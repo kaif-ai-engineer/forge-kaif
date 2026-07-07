@@ -11,7 +11,7 @@ that are consistent across your entire API.
 ## Installation
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ## Quick Start

@@ -9,7 +9,7 @@ caching, and more.
 ## Quick Install
 
 ```bash
-pip install forge-runtime
+pip install forge-kaif
 ```
 
 ## Your First AI Call

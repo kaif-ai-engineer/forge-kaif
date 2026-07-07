@@ -19,7 +19,7 @@ class Container:
     annotation-based) per `ADR-001`_.
 
     .. _ADR-001:
-       https://github.com/forge-runtime/forge/blob/main/docs/ADR-001.md
+       https://github.com/kaif-ai-engineer/forge-kaif/blob/main/docs/ADR-001.md
     """
 
     def __init__(self) -> None:

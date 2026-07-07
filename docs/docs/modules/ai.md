@@ -11,9 +11,9 @@ write code once and switch providers by changing a config value.
 ## Installation
 
 ```bash
-pip install forge-runtime[openai]     # OpenAI support
-pip install forge-runtime[anthropic]  # Anthropic support
-pip install forge-runtime[all]        # All providers
+pip install forge-kaif[openai]     # OpenAI support
+pip install forge-kaif[anthropic]  # Anthropic support
+pip install forge-kaif[all]        # All providers
 ```
 
 ## Quick Start

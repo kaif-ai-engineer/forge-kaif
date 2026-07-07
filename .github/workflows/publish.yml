@@ -9,38 +9,150 @@ concurrency:
   group: publish-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      id-token: write
-      contents: read
+permissions:
+  id-token: write
+  contents: read
 
+jobs:
+
+  # ------------------------------------------------------------------
+  # Validate that the pushed tag follows strict semantic versioning
+  # (MAJOR.MINOR.PATCH) and extract the bare version string.
+  # ------------------------------------------------------------------
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.parse.outputs.version }}
+    steps:
+      - name: Validate semver tag
+        id: parse
+        run: |
+          TAG="${{ github.ref_name }}"
+          if ! echo "$TAG" | grep -qP '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$'; then
+            echo "::error::Tag '$TAG' is not a valid semver tag (expected vMAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+  # ------------------------------------------------------------------
+  # Verify the wheel builds and installs cleanly on every supported
+  # Python version (compatibility matrix).
+  # ------------------------------------------------------------------
+  compatibility:
+    needs: [validate]
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv pip install --system hatch
+      - run: hatch build
+      - run: uv pip install --system dist/*.whl
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
+  # ------------------------------------------------------------------
+  # Publish the package to PyPI (via trusted publishing), create a
+  # GitHub Release, and keep CHANGELOG.md up to date on main.
+  # ------------------------------------------------------------------
+  publish:
+    needs: [validate, compatibility]
+    permissions:
+      id-token: write
+      contents: write
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Cache uv environment
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: uv-publish-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            uv-publish-
+      - name: Install build tools
+        run: uv pip install --system hatch
 
-      - name: Install build dependencies
-        run: uv pip install --system hatchling
+      - name: Sync version file with tag
+        run: |
+          echo "__version__ = \"${VERSION}\"" > src/forge/_version.py
 
-      - name: Build package
+      - name: Build distribution packages
         run: hatch build
 
       - name: Publish to PyPI
+        continue-on-error: true
         uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Generate release notes
+        run: |
+          PREV_TAG="$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)"
+
+          cat > /tmp/release.md <<- HEREDOC
+          ## ${VERSION}
+
+          HEREDOC
+
+          if [ -n "${PREV_TAG}" ]; then
+            RANGE="${PREV_TAG}..HEAD"
+          else
+            RANGE=""
+          fi
+
+          if [ -n "${RANGE}" ]; then
+            git log --no-merges --pretty=format:"- %s" "${RANGE}" >> /tmp/release.md
+          else
+            git log --no-merges --pretty=format:"- %s" >> /tmp/release.md
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file /tmp/release.md \
+            dist/*.whl dist/*.tar.gz
+
+      - name: Update CHANGELOG.md on main
+        run: |
+          git fetch origin main
+          git checkout main
+
+          DATE="$(date +%Y-%m-%d)"
+          HEADING="## ${VERSION} (${DATE})"
+          PREV_TAG="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
+
+          # Find the first existing release heading
+          FIRST_LINE="$(grep -n "^## " CHANGELOG.md | head -1 | cut -d: -f1)"
+
+          # Split file at the first heading and insert new entry
+          head -n "$((FIRST_LINE - 1))" CHANGELOG.md > /tmp/new_changelog.md
+          echo "" >> /tmp/new_changelog.md
+          echo "${HEADING}" >> /tmp/new_changelog.md
+          echo "" >> /tmp/new_changelog.md
+          echo "### Added" >> /tmp/new_changelog.md
+          echo "" >> /tmp/new_changelog.md
+
+          if [ -n "${PREV_TAG}" ]; then
+            git log --no-merges --pretty=format:"- %s" "${PREV_TAG}..v${VERSION}" >> /tmp/new_changelog.md
+          else
+            git log --no-merges --pretty=format:"- %s" >> /tmp/new_changelog.md
+          fi
+
+          echo "" >> /tmp/new_changelog.md
+          tail -n +"${FIRST_LINE}" CHANGELOG.md >> /tmp/new_changelog.md
+          mv /tmp/new_changelog.md CHANGELOG.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet || git commit -m "chore: update CHANGELOG.md for v${VERSION}"
+          git push

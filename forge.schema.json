@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "forge-runtime",
-  "description": "Machine-readable API manifest for AI agent tool discovery. Describes the public API surface of the forge-runtime package.",
+  "title": "forge-kaif",
+  "description": "Machine-readable API manifest for AI agent tool discovery. Describes the public API surface of the forge-kaif package.",
   "version": "0.1.0",
   "modules": {
     "forge.config": {

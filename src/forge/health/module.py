@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from forge.core.module import ForgeModule
+from forge.core.otel import get_meter
 from forge.health._state import set_health_module
 from forge.health.checks import (
     HealthCheckFn,
@@ -93,6 +94,22 @@ class HealthModule(ForgeModule):
         """Initialize the health module and configure settings."""
         self._runtime = runtime
         set_health_module(self)
+
+        # OTel instruments
+        meter = get_meter()
+        self._otel_health_gauge: Any = None
+        self._otel_health_latency: Any = None
+        if meter is not None:
+            self._otel_health_gauge = meter.create_up_down_counter(
+                "health.check.status",
+                description="Health check status (0=ok, 1=degraded, 2=error)",
+                unit="1",
+            )
+            self._otel_health_latency = meter.create_histogram(
+                "health.check.latency",
+                description="Health check latency in milliseconds",
+                unit="ms",
+            )
 
         # Register default critical "runtime" check
         async def check_runtime() -> HealthResult:
@@ -192,7 +209,26 @@ class HealthModule(ForgeModule):
                     "latency_ms": round(latency_ms, 2),
                 }
 
+        # Record OTel metrics for health checks
+        self._record_otel_health_metrics(results)
+
         return results
+
+    def _record_otel_health_metrics(self, results: dict[str, dict[str, Any]]) -> None:
+        if self._otel_health_gauge is None or self._otel_health_latency is None:
+            return
+
+        for name, res in results.items():
+            status_value: int = {"ok": 0, "degraded": 1, "error": 2}.get(
+                res.get("status", "error"), 2
+            )
+            self._otel_health_gauge.add(
+                status_value,
+                {"check": name, "status": res.get("status", "error")},
+            )
+            latency = res.get("latency_ms", 0.0)
+            if isinstance(latency, (int, float)):
+                self._otel_health_latency.record(latency, {"check": name})
 
     def is_ready(self, check_results: dict[str, dict[str, Any]]) -> bool:
         """

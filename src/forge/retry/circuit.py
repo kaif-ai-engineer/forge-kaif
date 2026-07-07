@@ -9,7 +9,24 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from typing import Self
 
+from forge.core.otel import get_meter
+
 _logger = logging.getLogger(__name__)
+
+_cb_state_counter = None
+
+
+def _get_cb_state_counter() -> Any:
+    global _cb_state_counter  # noqa: PLW0603
+    if _cb_state_counter is None:
+        meter = get_meter()
+        if meter is not None:
+            _cb_state_counter = meter.create_counter(
+                "circuit.breaker.state",
+                description="Circuit breaker state transitions",
+                unit="1",
+            )
+    return _cb_state_counter
 
 
 class CircuitBreakerState(enum.Enum):
@@ -20,6 +37,12 @@ class CircuitBreakerState(enum.Enum):
 
 class CircuitBreakerOpenError(Exception):
     """Raised when a call is rejected because the circuit breaker is open."""
+
+
+def _record_cb_state(name: str, state: CircuitBreakerState) -> None:
+    counter = _get_cb_state_counter()
+    if counter is not None:
+        counter.add(1, {"circuit_breaker": name, "state": state.value})
 
 
 class CircuitBreaker:
@@ -99,6 +122,7 @@ class CircuitBreaker:
         self._state = CircuitBreakerState.CLOSED
         self._failure_count = 0
         self._last_failure_time = 0.0
+        _record_cb_state(self._name, self._state)
 
     def _check_state(self) -> None:
         if self._state is CircuitBreakerState.OPEN:
@@ -108,6 +132,7 @@ class CircuitBreaker:
                     self._name,
                 )
                 self._state = CircuitBreakerState.HALF_OPEN
+                _record_cb_state(self._name, self._state)
             else:
                 raise CircuitBreakerOpenError(f"Circuit breaker {self._name!r} is OPEN")
 
@@ -116,6 +141,7 @@ class CircuitBreaker:
             _logger.info("Circuit breaker %r recovered, closing", self._name)
         self._state = CircuitBreakerState.CLOSED
         self._failure_count = 0
+        _record_cb_state(self._name, self._state)
 
     def _on_failure(self) -> None:
         self._failure_count += 1
@@ -131,3 +157,4 @@ class CircuitBreaker:
                 self._failure_threshold,
             )
             self._state = CircuitBreakerState.OPEN
+            _record_cb_state(self._name, self._state)

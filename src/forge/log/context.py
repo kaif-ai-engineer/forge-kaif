@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from typing import Self
 
+from forge.core.otel import get_current_span_context
+from forge.core.otel import is_otel_available as _otel_available
+
 _log_context: ContextVar[dict[str, Any]] = ContextVar("_log_context")
 
 
@@ -53,6 +56,12 @@ class LogContextFilter(logging.Filter):
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
+        if _otel_available():
+            ctx = get_current_span_context()
+            if ctx:
+                record.otel_trace_id = ctx["trace_id"]
+                record.otel_span_id = ctx["span_id"]
+
         fields = _log_context.get({})
         for key, value in fields.items():
             if not hasattr(record, key):

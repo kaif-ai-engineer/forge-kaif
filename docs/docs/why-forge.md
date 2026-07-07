@@ -71,7 +71,7 @@ five minutes better or worse?*
 
 ```mermaid
 flowchart LR
-    A["pip install forge-runtime"] --> B["Set API key"]
+    A["pip install forge-kaif"] --> B["Set API key"]
     B --> C["Write 5 lines of code"]
     C --> D["First AI call works"]
     D --> E["Developer is impressed"]
