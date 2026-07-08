@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+
+## 0.4.0 (2026-07-08)
+
+### Added
+
+- chore: bump v0.4.0 — AI agent compatibility, .cursorrules, schema, docs
+- fix: cross-env mypy ignores (no-any-return, type-arg, attr-defined)
+- fix: resolve mypy strict-mode errors in redis backend (type-arg, attr-defined)
+- feat(#25): Add .cursorrules template and forge.schema.json for AI agent compatibility
+- test (#24): add full app integration suite for P0 modules
+- #23: add performance benchmarks for P0 modules with CI regression gate
+- removed --fail
+- fixed trufflehog security issue
+- add pytest-cov
+- chore: add missing open source repository infrastructure
+- chore: update CHANGELOG.md for v0.3.0
+- chore: update CHANGELOG.md for v0.2.0
 ## 0.3.0 (2026-07-06)
 
 ### Added
