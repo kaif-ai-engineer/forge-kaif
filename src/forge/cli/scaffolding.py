@@ -10,7 +10,7 @@ import jinja2
 def render_template(content: str, variables: dict[str, Any]) -> str:
     """Render a template string using Jinja2."""
     template = jinja2.Template(content)
-    return template.render(**variables)
+    return template.render(**variables)  # type: ignore[no-any-return, unused-ignore]
 
 
 def copy_template_dir(

@@ -30,8 +30,8 @@ class RedisBackend:
         self._prefix = key_prefix
         self._max_connections = max_connections
         self._default_ttl = default_ttl
-        self._pool: aioredis.ConnectionPool | None = None  # type: ignore[type-arg]
-        self._client: aioredis.Redis | None = None  # type: ignore[type-arg]
+        self._pool: aioredis.ConnectionPool | None = None  # type: ignore[type-arg, unused-ignore]
+        self._client: aioredis.Redis | None = None  # type: ignore[type-arg, unused-ignore]
 
     @property
     def url(self) -> str:
@@ -63,7 +63,7 @@ class RedisBackend:
         """Close connection pool and release resources."""
         if self._client:
             try:
-                await self._client.aclose()  # type: ignore[attr-defined]
+                await self._client.aclose()  # type: ignore[attr-defined, unused-ignore]
             except Exception as exc:
                 logger.warning("Error closing Redis client: %s", exc)
         if self._pool:
