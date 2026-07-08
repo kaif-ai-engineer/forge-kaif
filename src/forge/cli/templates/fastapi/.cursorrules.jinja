@@ -1,5 +1,210 @@
-When writing Python backend code with forge:
-- Import from forge modules: `from forge.ai import complete, Message`
-- Use @retry for all external API calls
-- Use forge.config for all configuration
-- Use forge.log.get(__name__) for logging
+# forge-runtime: AI Agent Coding Guidelines
+
+When writing Python backend code with forge-runtime, follow these conventions.
+
+## Import Conventions
+
+Use direct imports from forge public modules:
+```python
+# ✅ Correct imports
+from forge.ai import complete, stream, Message, CompletionResponse
+from forge.config import ForgeConfig, load_dotenv
+from forge.core import ForgeModule, ForgeRuntime, ForgeError
+from forge.core.exceptions import ConfigurationError, ModuleNotFoundError
+from forge.log import get as get_logger, context as log_context
+from forge.retry import retry, CircuitBreaker, RetryError
+from forge.cache import cached, invalidate
+from forge.health import check, health_router, HealthResult
+from forge.validation import validate, ValidationErrorResponse
+from forge.events import EventsModule
+from forge.jobs import job, schedule, JobsModule
+
+# ❌ Wrong: importing internal implementation details
+# from forge.ai.module import AIModule  (use from forge.ai import complete instead)
+# from forge.log.formatters import JSONFormatter  (use from forge.log import get instead)
+```
+
+## Retry Usage
+
+All external API calls must be wrapped with `@retry`:
+```python
+from forge.retry import retry, CircuitBreaker
+
+# Basic retry — use for upstream API calls
+@retry(attempts=3, backoff="exponential")
+async def call_external_api() -> dict:
+    return await httpx.get("https://api.example.com/data")
+
+# Retry with circuit breaker — use for flaky dependencies
+breaker = CircuitBreaker(failure_threshold=5, recovery_time=60.0)
+
+@retry(attempts=3, circuit_breaker=breaker)
+async def call_flaky_service() -> dict:
+    ...
+
+# Retry on specific exceptions only
+@retry(attempts=5, exceptions=(ConnectionError, TimeoutError))
+async def call_database():
+    ...
+```
+
+## Config Access Patterns
+
+Access config through the global `forge.config` after runtime init:
+```python
+from forge.config import ForgeConfig
+
+# At module setup time — recommended pattern
+class MyModule(ForgeModule):
+    name = "my_module"
+
+    async def setup(self, runtime: ForgeRuntime) -> None:
+        config: ForgeConfig = runtime.get_config()
+        self.db_url = config.get("database.url", "sqlite:///default.db")
+        self.debug = config.get("debug", False)
+
+# For testing: use override context manager
+from forge.config import ForgeConfig
+config = ForgeConfig()
+with config.override({"database.url": "sqlite:///:memory:"}):
+    ...
+```
+
+## Logging Conventions
+
+Use structured logging with context:
+```python
+from forge.log import get as get_logger, context as log_context
+
+log = get_logger(__name__)
+
+# ✅ Correct: structured fields as kwargs
+log.info("User created", user_id=user.id, role=user.role)
+log.error("Payment failed", exc_info=exc, order_id=order.id)
+
+# ❌ Wrong: string interpolation in message
+# log.info(f"User {user.id} created")
+# log.info("User %s created", user.id)
+
+# ❌ Wrong: passing secrets in log context
+# log.info("API call", api_key="sk-...")
+
+# Context binding for request-scoped data
+with log_context(request_id="abc-123", trace_id=trace_id):
+    log.info("Processing request")  # automatically includes request_id + trace_id
+```
+
+## Structured Output (AI Module)
+
+```python
+from pydantic import BaseModel
+from forge.ai import complete, Message
+
+class SentimentResult(BaseModel):
+    sentiment: str
+    confidence: float
+
+result = await complete(
+    messages=[Message.user("Analyze: I love this!")],
+    output_schema=SentimentResult,  # auto-retries on invalid JSON
+)
+# result is a SentimentResult instance
+print(result.sentiment, result.confidence)
+```
+
+## Error Handling
+
+```python
+from forge.core.exceptions import ForgeError, ConfigurationError
+
+try:
+    response = await call_external_api()
+except ConfigurationError:
+    log.error("Missing required configuration")
+    raise
+except ForgeError as exc:
+    log.error("Forge operation failed", error=str(exc))
+    # All forge errors follow: {name}: {message}\n\n  {context}\n\n  To fix: {steps}
+```
+
+## Cache Usage
+
+```python
+from forge.cache import cached, invalidate
+
+@cached(ttl=300, key="user:{user_id}")
+async def get_user(user_id: int) -> dict:
+    return await db.fetch_user(user_id)
+
+# Manual invalidation
+await invalidate("user:123")
+```
+
+## AI Streaming
+
+```python
+from forge.ai import stream, Message
+
+async for chunk in stream(messages=[Message.user("Tell me a story")]):
+    print(chunk.delta, end="")
+```
+
+## Module Patterns
+
+```python
+from forge.core import ForgeModule, ForgeRuntime
+
+class MyBusinessModule(ForgeModule):
+    name = "my_business"
+    dependencies = ["config", "log"]  # optional
+
+    async def setup(self, runtime: ForgeRuntime) -> None:
+        self.config = runtime.get_config()
+        self.log = get_logger(self.name)
+
+    async def teardown(self) -> None:
+        # cleanup resources
+        pass
+
+    def health_check(self) -> HealthResult:
+        if self._is_healthy():
+            return HealthResult.ok()
+        return HealthResult.error("dependency unavailable")
+```
+
+## FastAPI Integration
+
+```python
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from forge.core import ForgeRuntime
+
+runtime = ForgeRuntime()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await runtime.init()
+    yield
+    await runtime.teardown()
+
+app = FastAPI(lifespan=lifespan)
+
+# Mount health endpoints
+from forge.health import health_router
+app.include_router(health_router)
+```
+
+## Error Message Format
+
+All forge exceptions follow this parseable format:
+```
+{ExceptionClass}: {what happened — one sentence, specific}
+
+  {why it happened — context}
+
+  To fix this:
+    {step 1}
+    {step 2}
+
+  Docs: {url}
+```

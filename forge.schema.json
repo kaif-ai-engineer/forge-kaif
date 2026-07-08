@@ -1,149 +1,839 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "forge-kaif",
-  "description": "Machine-readable API manifest for AI agent tool discovery. Describes the public API surface of the forge-kaif package.",
-  "version": "0.1.0",
+  "description": "Machine-readable API manifest for AI agent tool discovery. Describes the full public API surface of the forge-kaif package — including module classes, functions, type signatures, docstrings, error types, and usage examples.",
+  "version": "0.3.0",
+  "$comment": "All forge exceptions follow a parseable format: {ExceptionClass}: {what}\n\n  {why}\n\n  To fix this:\n    {step 1}\n    {step 2}\n\n  Docs: {url}",
   "modules": {
     "forge.config": {
-      "description": "Typed, validated, layered configuration from env vars, .env, and TOML.",
-      "functions": [
+      "description": "Typed, validated, layered configuration from env vars, .env, and TOML files via pydantic-settings. All modules declare their config requirements as Pydantic models; validation happens at startup.",
+      "error_types": [
+        {"name": "ConfigurationError", "description": "Raised when configuration is missing, invalid, or misconfigured. Format: 'ConfigurationError: Missing required config key: {key}\\n\\n  {context}\\n\\n  To fix this:\\n    {step 1}\\n    {step 2}'"}
+      ],
+      "classes": [
         {
-          "name": "require",
-          "signature": "require(*keys: str) -> None",
-          "description": "Validate that required config keys are present at startup. Raises ConfigurationError if any are missing.",
-          "example": "config.require(['DATABASE_URL', 'OPENAI_API_KEY'])"
+          "name": "ForgeConfig",
+          "signature": "ForgeConfig(**kwargs: Any) -> ForgeConfig",
+          "description": "Root configuration model. Auto-populated from environment variables, .env files, and forge.config.toml. Subclasses pydantic-settings BaseSettings.",
+          "example": "config = ForgeConfig()\nprint(config.ai.default_model)\nprint(config.ai.openai_api_key.get_secret_value())"
         },
         {
-          "name": "override",
-          "signature": "override(values: dict[str, Any]) -> Generator[None, None, None]",
-          "description": "Context manager for overriding config values in tests.",
-          "example": "with config.override({'database.url': 'sqlite:///:memory:'}): ..."
+          "name": "ConfigModule",
+          "signature": "ConfigModule(config_path: Path | str | None = None, env_file: Path | str | None = None) -> ConfigModule",
+          "description": "ForgeModule that provides validated application configuration. Loads from env vars, .env files, and forge.config.toml. Must be registered first in the runtime.",
+          "example": "runtime.register(ConfigModule())"
+        },
+        {
+          "name": "AIConfig",
+          "signature": "AIConfig(default_model: str = 'gpt-4o', openai_api_key: SecretStr | None = None, anthropic_api_key: SecretStr | None = None, timeout: float = 30.0, max_tokens: int = 4096, fallback_models: list[str] = [], structured_output_retries: int = 3) -> AIConfig",
+          "description": "Configuration for the forge AI module.",
+          "example": "AIConfig(default_model='claude-sonnet-4-6')"
+        },
+        {
+          "name": "LogConfig",
+          "signature": "LogConfig(level: str = 'INFO', format: str = 'dev', levels: dict[str, str] = {}) -> LogConfig",
+          "description": "Configuration for the forge logging module.",
+          "example": "LogConfig(level='DEBUG', format='json')"
+        },
+        {
+          "name": "RetryConfig",
+          "signature": "RetryConfig(default_attempts: int = 3, default_backoff: str = 'exponential', default_base_delay: float = 1.0, default_max_delay: float = 60.0, default_jitter: bool = True) -> RetryConfig",
+          "description": "Configuration for the forge retry module."
+        },
+        {
+          "name": "CacheConfig",
+          "signature": "CacheConfig(backend: str = 'memory', default_ttl: int = 300, memory_max_size: int = 1000, redis_url: SecretStr | None = None) -> CacheConfig",
+          "description": "Configuration for the forge cache module."
+        },
+        {
+          "name": "HealthConfig",
+          "signature": "HealthConfig(check_timeout: float = 5.0) -> HealthConfig",
+          "description": "Configuration for the forge health module."
+        },
+        {
+          "name": "CircuitBreakerConfig",
+          "signature": "CircuitBreakerConfig(failure_threshold: int = 5, recovery_time: float = 60.0) -> CircuitBreakerConfig",
+          "description": "Configuration for the forge circuit breaker."
+        }
+      ],
+      "functions": [
+        {
+          "name": "load_dotenv",
+          "signature": "load_dotenv(path: Path | str) -> dict[str, str]",
+          "description": "Parse a .env file into a dict. Handles quoted values, comments, and multi-line values.",
+          "example": "env_vars = load_dotenv(Path('.env'))"
+        },
+        {
+          "name": "load_toml",
+          "signature": "load_toml(path: Path | str) -> dict[str, Any]",
+          "description": "Load a TOML config file. Returns empty dict if file not found.",
+          "example": "config = load_toml(Path('forge.config.toml'))"
+        },
+        {
+          "name": "merge_config",
+          "signature": "merge_config(*layers: dict[str, Any]) -> dict[str, Any]",
+          "description": "Deep-merge config layers. Later layers win on conflict. Nested dicts are merged recursively.",
+          "example": "merged = merge_config(defaults, env_overrides, file_config)"
+        },
+        {
+          "name": "deep_merge",
+          "signature": "deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None",
+          "description": "In-place deep merge of override into base dict."
+        },
+        {
+          "name": "mask_value",
+          "signature": "mask_value(value: str, visible_chars: int = 4) -> str",
+          "description": "Mask a sensitive string showing only the last N characters.",
+          "example": "mask_value('sk-abc123def456') -> '********f456'"
+        },
+        {
+          "name": "str_from_secret",
+          "signature": "str_from_secret(secret: SecretStr | None) -> str | None",
+          "description": "Safely extract the string value from a SecretStr. Returns None if secret is None.",
+          "example": "api_key = str_from_secret(config.ai.openai_api_key)"
+        },
+        {
+          "name": "field_is_sensitive",
+          "signature": "field_is_sensitive(field_name: str) -> bool",
+          "description": "Returns True if the field name suggests it contains sensitive data. Matches against known patterns like 'key', 'token', 'password', 'secret'."
+        },
+        {
+          "name": "is_secret",
+          "signature": "is_secret(value: Any) -> bool",
+          "description": "Returns True if the value is a SecretStr or SecretBytes."
         }
       ]
     },
     "forge.log": {
-      "description": "Structured JSON logging with automatic trace context propagation.",
+      "description": "Structured JSON logging with automatic trace context propagation via contextvars. Supports development (colorized) and production (JSON) output formats.",
+      "error_types": [],
+      "classes": [
+        {
+          "name": "LogModule",
+          "signature": "LogModule() -> LogModule",
+          "description": "ForgeModule that provides structured logging. Automatically registers JSON and dev formatters based on config. Must be initialized after ConfigModule.",
+          "example": "runtime.register(LogModule())"
+        },
+        {
+          "name": "LoggerProxy",
+          "signature": "LoggerProxy(logger: logging.Logger) -> LoggerProxy",
+          "description": "Proxy around stdlib Logger that enforces structured logging (no %-formatting). All extra kwargs become structured fields.",
+          "example": "logger = LoggerProxy(logging.getLogger('my_module'))\nlogger.info('User created', user_id=123)"
+        },
+        {
+          "name": "LogContext",
+          "signature": "LogContext(**kwargs: Any) -> LogContext",
+          "description": "Context manager that binds key-value pairs to all log entries within the context block.",
+          "example": "with LogContext(request_id='abc'): logger.info('processing')"
+        },
+        {
+          "name": "LogContextFilter",
+          "signature": "LogContextFilter() -> LogContextFilter",
+          "description": "Logging filter that injects contextvars into LogRecord."
+        },
+        {
+          "name": "JSONFormatter",
+          "signature": "JSONFormatter() -> JSONFormatter",
+          "description": "Production log formatter. Outputs one JSON object per line, designed for log aggregators (Datadog, CloudWatch, Loki)."
+        },
+        {
+          "name": "DevFormatter",
+          "signature": "DevFormatter() -> DevFormatter",
+          "description": "Development log formatter. Human-readable, colorized, compact output with ANSI codes. NOT for production use."
+        }
+      ],
       "functions": [
         {
           "name": "get",
-          "signature": "get(name: str) -> Logger",
-          "description": "Get a logger instance for the given module name.",
-          "example": "logger = log.get('my_module')"
+          "signature": "get(name: str) -> LoggerProxy",
+          "description": "Get a logger instance for the given module name. Delegates to the active runtime's LogModule if initialized, otherwise returns a default LoggerProxy.",
+          "example": "log = get('my_module')\nlog.info('Startup complete', duration_ms=42.5)"
         },
         {
           "name": "context",
-          "signature": "context(**kwargs: Any) -> Generator[None, None, None]",
-          "description": "Context manager for binding key-value pairs to all log entries within the context.",
-          "example": "with log.context(request_id='abc-123'): ..."
+          "signature": "context(**kwargs: Any) -> LogContext",
+          "description": "Context manager for binding key-value pairs to all log entries within the context block. Pairs with log.context() for request-scoped data.",
+          "example": "with context(request_id='abc-123', user_id=42):\n    log.info('Processing')  # includes request_id and user_id"
         }
       ]
     },
     "forge.retry": {
-      "description": "Retry logic with exponential backoff, jitter, and circuit breaker.",
+      "description": "Retry logic with exponential backoff, full jitter, and circuit breaker. Zero overhead on the success path. Automatically logs retry attempts when LogModule is registered.",
+      "error_types": [
+        {"name": "RetryError", "description": "Raised when retries are exhausted. Includes attempt count and last exception."},
+        {"name": "NonRetryableError", "description": "Raised when a non-retryable exception is encountered during a retry block."},
+        {"name": "CircuitBreakerOpenError", "description": "Raised when a request is blocked because the circuit breaker is OPEN. Format includes failure count, threshold, and recovery time."}
+      ],
       "classes": [
         {
           "name": "CircuitBreaker",
-          "signature": "CircuitBreaker(failure_threshold: int = 5, recovery_time: float = 60.0)",
-          "description": "Circuit breaker that prevents retries after a configurable failure threshold.",
-          "example": "breaker = CircuitBreaker(failure_threshold=5, recovery_time=60)"
+          "signature": "CircuitBreaker(failure_threshold: int = 5, recovery_time: float = 60.0, name: str = 'unnamed') -> CircuitBreaker",
+          "description": "Circuit breaker that prevents retries after a configurable failure threshold. State machine: CLOSED -> OPEN -> HALF_OPEN -> CLOSED.",
+          "example": "breaker = CircuitBreaker(failure_threshold=5, recovery_time=60.0, name='openai')\n@retry(attempts=3, circuit_breaker=breaker)\nasync def call_api(): ..."
+        },
+        {
+          "name": "RetryModule",
+          "signature": "RetryModule() -> RetryModule",
+          "description": "ForgeModule that provides retry configuration and integrates with the logging module for automatic retry attempt logging."
+        },
+        {
+          "name": "CircuitBreakerState",
+          "signature": "CircuitBreakerState",
+          "description": "Enum of circuit breaker states: CLOSED (normal), OPEN (blocking), HALF_OPEN (probing)."
         }
       ],
       "functions": [
         {
           "name": "retry",
-          "signature": "retry(attempts: int = 3, backoff: str = 'exponential', exceptions: list[type[Exception]] | None = None, circuit_breaker: CircuitBreaker | None = None)",
-          "description": "Decorator for async functions that retries on failure with configurable backoff.",
-          "example": "@retry(attempts=3, backoff='exponential')"
+          "signature": "retry(attempts: int = 3, backoff: str | BackoffStrategy = 'exponential', exceptions: tuple[type[Exception], ...] | None = None, circuit_breaker: CircuitBreaker | None = None, on_retry: Callable[[int, Exception], None] | None = None) -> Callable[[F], F]",
+          "description": "Decorator for async functions that retries on failure with configurable backoff. Supports exponential, linear, and constant backoff strategies. Only retries on specified exception types. Non-retryable exceptions pass through immediately.",
+          "example": "@retry(attempts=3, backoff='exponential', exceptions=(ConnectionError, TimeoutError))\nasync def fetch_data(): ..."
         },
         {
-          "name": "attempt",
-          "signature": "attempt(max_attempts: int = 3) -> AsyncIterator[AttemptContext]",
-          "description": "Async context manager for manual retry loops.",
-          "example": "async with retry.attempt(max_attempts=3) as attempt: ..."
+          "name": "exponential",
+          "signature": "exponential(base: float = 1.0, maximum: float = 60.0, jitter: bool = True, multiplier: float = 2.0) -> ExponentialBackoff",
+          "description": "Create an exponential backoff strategy with full jitter (AWS-recommended).",
+          "example": "strategy = exponential(base=2.0, maximum=30.0)"
+        },
+        {
+          "name": "linear",
+          "signature": "linear(base: float = 1.0, maximum: float = 30.0) -> LinearBackoff",
+          "description": "Create a linear backoff strategy: delay = base * (attempt + 1)."
+        },
+        {
+          "name": "constant",
+          "signature": "constant(delay: float = 1.0) -> ConstantBackoff",
+          "description": "Create a constant backoff strategy (fixed delay between retries). Useful for rate limit handling."
+        },
+        {
+          "name": "get_backoff",
+          "signature": "get_backoff(name: str) -> BackoffStrategy",
+          "description": "Resolve a backoff strategy by name: 'exponential', 'linear', or 'constant'."
         }
       ]
     },
     "forge.ai": {
-      "description": "Unified AI model interface across OpenAI, Anthropic, Gemini, and Ollama.",
+      "description": "Unified AI model interface across OpenAI, Anthropic, Gemini, and Ollama. Supports completions, streaming, structured output enforcement (Pydantic with auto-retry), model fallback chains, token budgeting, and cost estimation.",
+      "error_types": [
+        {"name": "AIError", "description": "Base exception for all AI module errors."},
+        {"name": "AIProviderError", "description": "Raised when the provider API returns an error (auth, billing, bad request)."},
+        {"name": "RateLimitError", "description": "Raised when the provider rate-limits the client. Includes retry-after information."},
+        {"name": "TokenLimitError", "description": "Raised when the requested prompt exceeds the model's context window."},
+        {"name": "ModelNotFoundError", "description": "Raised when the requested model is not available or registered with any adapter."},
+        {"name": "AllModelsFailedError", "description": "Raised when all models in the fallback chain have failed."},
+        {"name": "StructuredOutputError", "description": "Raised when structured output fails after max retries. Contains schema_name, attempts, last_response, and last_error."},
+        {"name": "StreamInterruptedError", "description": "Raised when an active stream is cut short or disconnected."},
+        {"name": "BudgetExceededError", "description": "Raised when a request exceeds the configured token budget before execution."}
+      ],
       "classes": [
         {
           "name": "Message",
-          "signature": "Message(role: str, content: str)",
-          "description": "A chat message with role (system, user, assistant) and content."
+          "signature": "Message(role: Literal['system', 'user', 'assistant'], content: str) -> Message",
+          "description": "An immutable chat message. Use factory methods: Message.system(), Message.user(), Message.assistant() for role validation.",
+          "example": "msg = Message.user('What is 2+2?')\nmsg = Message.system('You are helpful.')"
         },
         {
           "name": "AIResponse",
-          "signature": "AIResponse(content: str, model: str, usage: dict[str, int])",
-          "description": "Response from an AI model call including content, model used, and token usage."
+          "signature": "AIResponse(content: str, model: str, provider: str, input_tokens: int, output_tokens: int, latency_ms: float, parsed: Any | None = None, finish_reason: str = 'stop', request_id: str | None = None) -> AIResponse",
+          "description": "Immutable response from an AI model completion call. Includes token counts, latency, cost estimate, and optional parsed structured output.",
+          "example": "response = await complete(...)\nprint(f'{response.content} (${response.estimated_cost_usd:.4f})')"
+        },
+        {
+          "name": "CompletionRequest",
+          "signature": "CompletionRequest(model: str, messages: list[Message], max_tokens: int | None = None, temperature: float | None = None, **extra: Any) -> CompletionRequest",
+          "description": "Request object for AI completion calls. Holds model, messages, and generation parameters."
+        },
+        {
+          "name": "CompletionResponse",
+          "signature": "CompletionResponse(content: str, model: str, usage: TokenUsage) -> CompletionResponse",
+          "description": "Standard completion response with content, model info, and token usage."
+        },
+        {
+          "name": "StreamChunk",
+          "signature": "StreamChunk(delta: str, model: str, provider: str, finish_reason: str | None = None, input_tokens: int | None = None, output_tokens: int | None = None) -> StreamChunk",
+          "description": "A single chunk in a streaming AI response. The final chunk has finish_reason and token counts populated.",
+          "example": "async for chunk in stream(messages=[Message.user('Hello')]):\n    print(chunk.delta, end='')"
+        },
+        {
+          "name": "TokenUsage",
+          "signature": "TokenUsage(input_tokens: int, output_tokens: int) -> TokenUsage",
+          "description": "Token usage breakdown for an AI request."
+        },
+        {
+          "name": "AIModule",
+          "signature": "AIModule() -> AIModule",
+          "description": "ForgeModule that provides AI model abstraction. Manages adapters, model routing, retry integration, and logging for all AI calls.",
+          "example": "runtime.register(AIModule())"
+        },
+        {
+          "name": "ModelRouter",
+          "signature": "ModelRouter() -> ModelRouter",
+          "description": "Routes AI requests to the appropriate provider adapter based on model name. Supports exact match, prefix match, and explicit provider/model notation ('openai/gpt-4o').",
+          "example": "router = ModelRouter()\nrouter.register(OpenAIAdapter(api_key='...'))\nadapter = router.route('gpt-4o')"
+        },
+        {
+          "name": "TokenCounter",
+          "signature": "TokenCounter() -> TokenCounter",
+          "description": "Token counting utility for estimating usage before making API calls. Uses provider-specific tokenizers when available."
+        },
+        {
+          "name": "BaseAdapter",
+          "signature": "BaseAdapter() -> BaseAdapter",
+          "description": "Abstract base class for all AI provider adapters. Subclasses must implement: provider_name, supported_models, complete(), stream(). Must NOT implement retry or logging (handled by AIModule)."
+        },
+        {
+          "name": "OpenAIAdapter",
+          "signature": "OpenAIAdapter(api_key: str, base_url: str | None = None, timeout: float = 30.0, max_retries: int = 0) -> OpenAIAdapter",
+          "description": "Adapter for OpenAI-compatible APIs (OpenAI, Azure OpenAI, Groq, Together, etc.). Requires openai>=1.12 package.",
+          "example": "adapter = OpenAIAdapter(api_key='sk-...')"
+        },
+        {
+          "name": "AnthropicAdapter",
+          "signature": "AnthropicAdapter(api_key: str, timeout: float = 30.0) -> AnthropicAdapter",
+          "description": "Adapter for Anthropic's Claude API. Requires anthropic>=0.20 package. Handles system message extraction and different streaming semantics.",
+          "example": "adapter = AnthropicAdapter(api_key='sk-ant-...')"
+        },
+        {
+          "name": "GeminiAdapter",
+          "signature": "GeminiAdapter(api_key: str, timeout: float = 30.0) -> GeminiAdapter",
+          "description": "Adapter for Google Gemini API."
+        },
+        {
+          "name": "OllamaAdapter",
+          "signature": "OllamaAdapter(base_url: str = 'http://localhost:11434', timeout: float = 30.0) -> OllamaAdapter",
+          "description": "Adapter for local Ollama models."
+        },
+        {
+          "name": "MockAdapter",
+          "signature": "MockAdapter(response: str | Callable | None = None, responses: list[str] | None = None, fail_with: Exception | None = None, fail_on_attempt: int | None = None, latency: float = 0.0) -> MockAdapter",
+          "description": "Test adapter for unit testing without real API calls. Supports fixed/dynamic/sequenced responses and simulated failures.",
+          "example": "adapter = MockAdapter(response='Hello!', latency=0.1)"
         }
       ],
       "functions": [
         {
           "name": "complete",
-          "signature": "complete(messages: list[Message], model: str | None = None, max_tokens: int | None = None, output_schema: type[BaseModel] | None = None, fallback_models: list[str] | None = None) -> AIResponse",
-          "description": "Send a completion request to an AI model. Supports structured output via Pydantic schemas with automatic retry on invalid output.",
-          "example": "response = await complete(messages=[Message.user('Hello')], model='gpt-4o')"
+          "signature": "complete(messages: list[Message], model: str | None = None, max_tokens: int | None = None, temperature: float | None = None, output_schema: type[BaseModel] | None = None, fallback_models: list[str] | None = None, max_retries: int | None = None, **kwargs: Any) -> CompletionResponse | BaseModel",
+          "description": "Send a completion request to an AI model. Supports structured output via Pydantic schemas with automatic retry on invalid output, and fallback model chains. Uses the active ForgeRuntime's AIModule.",
+          "example": "response = await complete(messages=[Message.user('Hello')], model='gpt-4o')\nprint(response.content)\n\nresult = await complete(messages=[...], output_schema=SentimentResult)\nprint(result.sentiment)"
         },
         {
           "name": "stream",
-          "signature": "stream(messages: list[Message], model: str | None = None, **kwargs: Any) -> AsyncIterator[StreamChunk]",
-          "description": "Stream a completion response from an AI model. Yields content delta chunks.",
-          "example": "async for chunk in stream(messages=[Message.user('Tell me a story')]): ..."
+          "signature": "stream(messages: list[Message], model: str | None = None, max_tokens: int | None = None, temperature: float | None = None, **kwargs: Any) -> AsyncIterator[StreamChunk]",
+          "description": "Stream a completion response from an AI model. Yields StreamChunk objects with delta content. Final chunk includes finish_reason and token counts. Uses the active ForgeRuntime's AIModule.",
+          "example": "async for chunk in stream(messages=[Message.user('Tell me a story')]):\n    print(chunk.delta, end='')"
         }
       ]
     },
     "forge.health": {
-      "description": "Kubernetes-compatible /health and /ready endpoints with custom check registration.",
+      "description": "Kubernetes-compatible health and readiness endpoints with custom check registration. Provides /health (liveness) and /ready (readiness) FastAPI routers.",
+      "error_types": [
+        {"name": "HealthCheckError", "description": "Raised when a health check fails critically."}
+      ],
+      "classes": [
+        {
+          "name": "HealthModule",
+          "signature": "HealthModule(check_timeout: float = 5.0) -> HealthModule",
+          "description": "ForgeModule that manages health and readiness checks. Automatically collects health_check() from all registered modules. Provides FastAPI router with /health and /ready endpoints.",
+          "example": "runtime.register(HealthModule())\napp.include_router(health_router)"
+        },
+        {
+          "name": "HealthRegistry",
+          "signature": "HealthRegistry() -> HealthRegistry",
+          "description": "Registry for custom health check functions. Supports async checks with configurable timeout."
+        },
+        {
+          "name": "HealthResult",
+          "signature": "HealthResult(status: CheckStatus, message: str | None = None, latency_ms: float | None = None) -> HealthResult",
+          "description": "Result of a single health check. Status is 'ok', 'degraded', or 'error'. Use factory methods: HealthResult.ok(), HealthResult.degraded(), HealthResult.error().",
+          "example": "return HealthResult.ok()\nreturn HealthResult.error('Database unreachable')"
+        }
+      ],
       "functions": [
         {
           "name": "check",
-          "signature": "check(name: str) -> Callable",
-          "description": "Decorator for registering a custom health check function.",
-          "example": "@forge.health.check('database') async def check_db(): ..."
+          "signature": "check(name: str) -> Callable[[Callable[..., Awaitable[HealthResult]]], Callable[..., Awaitable[HealthResult]]]",
+          "description": "Decorator for registering a custom async health check function. The decorated function must return a HealthResult.",
+          "example": "@check('database')\nasync def check_db() -> HealthResult:\n    try:\n        await db.execute('SELECT 1')\n        return HealthResult.ok()\n    except Exception as e:\n        return HealthResult.error(str(e))"
         }
       ]
     },
     "forge.cache": {
-      "description": "Decorator-based caching with in-memory LRU and Redis backends.",
+      "description": "Decorator-based caching with in-memory LRU and Redis backends. Supports configurable TTL, custom cache keys, and manual invalidation.",
+      "error_types": [
+        {"name": "CacheError", "description": "Base exception for all cache errors."},
+        {"name": "CacheBackendError", "description": "Raised when a cache backend operation fails (connection, serialization, etc.)."}
+      ],
+      "classes": [
+        {
+          "name": "CacheModule",
+          "signature": "CacheModule() -> CacheModule",
+          "description": "ForgeModule that provides caching infrastructure. Initializes the configured cache backend (memory or Redis) and provides default instances.",
+          "example": "runtime.register(CacheModule())"
+        }
+      ],
       "functions": [
         {
           "name": "cached",
-          "signature": "cached(ttl: int = 300, key: str | None = None, backend: str | None = None)",
-          "description": "Decorator that caches async function results with configurable TTL.",
-          "example": "@cached(ttl=300) async def get_user(user_id: int): ..."
+          "signature": "cached(ttl: int = 300, key: str | None = None, backend: CacheBackend | None = None) -> Callable[[F], F]",
+          "description": "Decorator that caches async function results with configurable TTL. Supports key templates with {param_name} substitution. If no key is provided, auto-generates from function name + args hash.",
+          "example": "@cached(ttl=300, key='user:{user_id}')\nasync def get_user(user_id: int) -> dict: ...\n\n@cached(ttl=60)\nasync def expensive(data: list[int]) -> int: ..."
         },
         {
           "name": "invalidate",
-          "signature": "invalidate(key: str) -> Awaitable[None]",
-          "description": "Invalidate a cached entry by key.",
+          "signature": "invalidate(key: str) -> Awaitable[bool]",
+          "description": "Invalidate a cached entry by key. Uses the active cache module's delete method.",
           "example": "await invalidate('user:123')"
         }
       ]
     },
     "forge.validation": {
-      "description": "Pydantic-integrated input validation with consistent error responses.",
+      "description": "Pydantic-integrated input validation with consistent error responses. Provides a decorator that validates function arguments against Pydantic schemas and raises FastAPI-compatible 422 errors.",
+      "error_types": [],
+      "classes": [
+        {
+          "name": "ValidationModule",
+          "signature": "ValidationModule() -> ValidationModule",
+          "description": "ForgeModule that provides validation infrastructure."
+        },
+        {
+          "name": "ValidationErrorDetail",
+          "signature": "ValidationErrorDetail(loc: list[str | int], msg: str, type: str) -> ValidationErrorDetail",
+          "description": "Details of a single validation error, compatible with FastAPI error response format."
+        },
+        {
+          "name": "ValidationErrorResponse",
+          "signature": "ValidationErrorResponse(detail: list[ValidationErrorDetail]) -> ValidationErrorResponse",
+          "description": "Standard error response for validation failures. Produces consistent 422 responses."
+        }
+      ],
       "functions": [
         {
           "name": "validate",
-          "signature": "validate(func: Callable) -> Callable",
-          "description": "Decorator that validates function arguments against type annotations using Pydantic.",
-          "example": "@validate async def create_user(data: CreateUserRequest): ..."
+          "signature": "validate(schema: type[BaseModel]) -> Callable[[F], F]",
+          "description": "Decorator that validates function input against a Pydantic schema. Works with both sync and async functions. On validation error, raises HTTPException(422) with structured error details.",
+          "example": "@validate(CreateUserRequest)\nasync def create_user(data: CreateUserRequest): ..."
+        },
+        {
+          "name": "format_validation_error",
+          "signature": "format_validation_error(exc: ValidationError) -> ValidationErrorResponse",
+          "description": "Convert a Pydantic ValidationError into a standard ValidationErrorResponse with consistent format.",
+          "example": "response = format_validation_error(exc)\nreturn JSONResponse(status_code=422, content=response.model_dump())"
         }
       ]
     },
     "forge.core": {
-      "description": "Core runtime with module registry, DI container, event bus, and lifecycle management.",
+      "description": "Core runtime with module registry, DI container, event bus, and lifecycle management. Provides the ForgeModule base class and ForgeRuntime coordinator for module initialization ordering and dependency injection.",
+      "error_types": [
+        {"name": "ForgeError", "description": "Base exception for all forge runtime errors."},
+        {"name": "ConfigurationError", "description": "Raised when configuration is missing, invalid, or misconfigured."},
+        {"name": "RuntimeNotInitializedError", "description": "Raised when an operation requires an initialized runtime but it is not."},
+        {"name": "ModuleNotFoundError", "description": "Raised when a requested module is not registered in the runtime."},
+        {"name": "ModuleRegistrationError", "description": "Raised when module registration fails (e.g., duplicate registration or invalid name)."},
+        {"name": "CircularDependencyError", "description": "Raised when a circular dependency is detected between modules during initialization order resolution."},
+        {"name": "ModuleStateError", "description": "Raised when a module operation is invalid for its current lifecycle state."},
+        {"name": "EventError", "description": "Raised when an event bus operation fails."},
+        {"name": "HealthCheckError", "description": "Raised when a health check fails critically."}
+      ],
       "classes": [
         {
           "name": "ForgeModule",
-          "signature": "ForgeModule()",
-          "description": "Base class for all forge modules. Subclasses must implement the 'name' property."
+          "signature": "ForgeModule() -> ForgeModule",
+          "description": "Base class for all forge modules. Subclasses must define a 'name' property. Can optionally declare 'dependencies' list and implement setup(), teardown(), and health_check().",
+          "example": "class MyModule(ForgeModule):\n    name = 'my_module'\n    dependencies = ['config', 'log']\n\n    async def setup(self, runtime):\n        self.config = runtime.get_config()\n\n    async def teardown(self):\n        pass\n\n    def health_check(self) -> HealthResult:\n        return HealthResult.ok()"
         },
         {
-          "name": "Runtime",
-          "signature": "Runtime()",
-          "description": "Central runtime coordinator that manages module lifecycle, DI, and events.",
-          "example": "runtime = forge.Runtime()\nruntime.register(ConfigModule())\nawait runtime.init()"
+          "name": "ForgeRuntime",
+          "signature": "ForgeRuntime() -> ForgeRuntime",
+          "description": "Central runtime coordinator that manages module lifecycle (register/setup/teardown), dependency injection, event bus, and config. Call init() after registering all modules.",
+          "example": "runtime = ForgeRuntime()\nruntime.register(ConfigModule())\nruntime.register(LogModule())\nruntime.register(AIModule())\nawait runtime.init()\n# ... use runtime ...\nawait runtime.teardown()"
+        },
+        {
+          "name": "Container",
+          "signature": "Container() -> Container",
+          "description": "Lightweight DI container. Modules are registered by type and resolved by type. Supports singleton scoping and dependency graph validation."
+        },
+        {
+          "name": "EventBus",
+          "signature": "EventBus() -> EventBus",
+          "description": "In-process event emitter/subscriber for decoupled module communication. Supports wildcard patterns ('ai.*') and lifecycle hooks."
+        },
+        {
+          "name": "TraceContext",
+          "signature": "TraceContext(trace_id: str, span_id: str) -> TraceContext",
+          "description": "Immutable trace context holding trace_id and span_id for distributed tracing propagation."
+        },
+        {
+          "name": "ModuleLifecycleState",
+          "signature": "ModuleLifecycleState",
+          "description": "Enum of module lifecycle states: UNREGISTERED, REGISTERED, SETTING_UP, READY, TEARING_DOWN, STOPPED."
+        }
+      ],
+      "functions": [
+        {
+          "name": "in_span",
+          "signature": "in_span(name: str, attributes: dict[str, Any] | None = None) -> AsyncIterator[None]",
+          "description": "Async context manager that creates an OpenTelemetry span. No-op if OpenTelemetry is not configured.",
+          "example": "async with in_span('process_payment', {'amount': 100}):\n    await process()"
+        },
+        {
+          "name": "init_otel",
+          "signature": "init_otel(service_name: str, endpoint: str | None = None) -> None",
+          "description": "Initialize OpenTelemetry SDK. Configures trace exporter and meter provider. No-op if opentelemetry packages are not installed.",
+          "example": "init_otel(service_name='my-app', endpoint='http://otel-collector:4318')"
+        },
+        {
+          "name": "get_trace_id",
+          "signature": "get_trace_id() -> str | None",
+          "description": "Get the current trace_id from contextvars, or None if not in an active trace."
+        },
+        {
+          "name": "set_trace_id",
+          "signature": "set_trace_id(trace_id: str | None) -> None",
+          "description": "Set the current trace_id in contextvars."
+        },
+        {
+          "name": "get_span_id",
+          "signature": "get_span_id() -> str | None",
+          "description": "Get the current span_id from contextvars."
+        },
+        {
+          "name": "generate_trace_id",
+          "signature": "generate_trace_id() -> str",
+          "description": "Generate a new random trace_id (16 hex characters)."
+        },
+        {
+          "name": "generate_span_id",
+          "signature": "generate_span_id() -> str",
+          "description": "Generate a new random span_id (16 hex characters)."
+        },
+        {
+          "name": "get_baggage",
+          "signature": "get_baggage() -> dict[str, str]",
+          "description": "Get all baggage items from the current context."
+        },
+        {
+          "name": "set_baggage",
+          "signature": "set_baggage(key: str, value: str) -> None",
+          "description": "Set a baggage item in the current context."
+        },
+        {
+          "name": "get_baggage_item",
+          "signature": "get_baggage_item(key: str) -> str | None",
+          "description": "Get a specific baggage item by key."
+        },
+        {
+          "name": "reset_baggage",
+          "signature": "reset_baggage() -> None",
+          "description": "Clear all baggage items from the current context."
+        },
+        {
+          "name": "get_meter",
+          "signature": "get_meter(name: str) -> Meter | None",
+          "description": "Get an OpenTelemetry meter for creating instruments. Returns None if OTel is not initialized."
+        },
+        {
+          "name": "get_tracer",
+          "signature": "get_tracer(name: str) -> Tracer | None",
+          "description": "Get an OpenTelemetry tracer for creating spans. Returns None if OTel is not initialized."
+        },
+        {
+          "name": "is_otel_available",
+          "signature": "is_otel_available() -> bool",
+          "description": "Returns True if OpenTelemetry packages are installed and initialized."
+        }
+      ]
+    },
+    "forge.events": {
+      "description": "In-process event bus for decoupled module communication. Supports typed event payloads, async handlers, lifecycle hooks, wildcard subscriptions, and event history for late-joining subscribers.",
+      "error_types": [
+        {"name": "EventError", "description": "Raised when an event bus operation fails."}
+      ],
+      "classes": [
+        {
+          "name": "EventsModule",
+          "signature": "EventsModule() -> EventsModule",
+          "description": "ForgeModule that provides the event bus. Wraps EventBus with lifecycle integration and event history buffer.",
+          "example": "runtime.register(EventsModule())"
+        },
+        {
+          "name": "EventBusWrapper",
+          "signature": "EventBusWrapper(event_bus: EventBus) -> EventBusWrapper",
+          "description": "Wrapper around EventBus with module-level convenience methods: emit(), on(), once()."
+        },
+        {
+          "name": "EventRecord",
+          "signature": "EventRecord(event: str, payload: dict[str, Any] | None, timestamp: float) -> EventRecord",
+          "description": "Record of a past event with its payload and timestamp. Used for event history replay."
+        },
+        {
+          "name": "Handler",
+          "signature": "Handler",
+          "description": "Type alias for async event handler: Callable[[str, dict[str, Any] | None], Awaitable[None]]."
+        }
+      ],
+      "functions": []
+    },
+    "forge.featureflags": {
+      "description": "Feature flag system with boolean, percentage rollout, and user-segment evaluation. Supports in-memory and Redis-backed storage, consistent-hash based percentage rollouts, and evaluation context.",
+      "error_types": [
+        {"name": "FeatureFlagError", "description": "Base exception for feature flag errors."},
+        {"name": "FlagNotFoundError", "description": "Raised when a requested flag is not found."},
+        {"name": "FlagEvaluationError", "description": "Raised when flag evaluation fails."},
+        {"name": "FlagStoreError", "description": "Raised when the flag store operation fails."},
+        {"name": "InvalidFlagDefinitionError", "description": "Raised when a flag definition is invalid or malformed."}
+      ],
+      "classes": [
+        {
+          "name": "FeatureFlagsModule",
+          "signature": "FeatureFlagsModule() -> FeatureFlagsModule",
+          "description": "ForgeModule that provides feature flag evaluation infrastructure.",
+          "example": "runtime.register(FeatureFlagsModule())"
+        },
+        {
+          "name": "FlagDefinition",
+          "signature": "FlagDefinition(key: str, type: FlagType, rules: list[FlagRule], default_value: bool = False, description: str = '') -> FlagDefinition",
+          "description": "Definition of a feature flag, including its type (boolean, percentage, segment), rules, and default value."
+        },
+        {
+          "name": "FlagEvaluator",
+          "signature": "FlagEvaluator(store: FlagStore) -> FlagEvaluator",
+          "description": "Evaluates feature flags against an evaluation context. Supports boolean flags, percentage rollouts (consistent hash), and user-segment rules.",
+          "example": "evaluator = FlagEvaluator(store)\nresult = evaluator.evaluate('new-checkout', EvaluationContext(user_id='123'))"
+        },
+        {
+          "name": "EvaluationContext",
+          "signature": "EvaluationContext(user_id: str | None = None, attributes: dict[str, Any] = {}) -> EvaluationContext",
+          "description": "Context for evaluating a feature flag. Includes user_id and optional attributes for segment matching."
+        },
+        {
+          "name": "EvaluationResult",
+          "signature": "EvaluationResult(key: str, value: bool, reason: EvaluationReason) -> EvaluationResult",
+          "description": "Result of a flag evaluation, including the boolean value and the reason for the decision."
+        },
+        {
+          "name": "FlagRule",
+          "signature": "FlagRule(type: FlagType, value: bool | float | list[SegmentRule], segments: list[SegmentRule] = []) -> FlagRule",
+          "description": "A single rule within a flag definition, specifying how the flag should be evaluated."
+        },
+        {
+          "name": "SegmentRule",
+          "signature": "SegmentRule(attribute: str, operator: str, value: Any) -> SegmentRule",
+          "description": "A rule for matching user segments by attribute comparison (eq, neq, contains, in, etc.)."
+        },
+        {
+          "name": "FlagType",
+          "signature": "FlagType",
+          "description": "Enum of flag types: BOOLEAN, PERCENTAGE, SEGMENT."
+        },
+        {
+          "name": "EvaluationReason",
+          "signature": "EvaluationReason",
+          "description": "Enum of evaluation reasons: DEFAULT, RULE_MATCH, PERCENTAGE_ROLLOUT, SEGMENT_MATCH."
+        },
+        {
+          "name": "MemoryFlagStore",
+          "signature": "MemoryFlagStore(flags: dict[str, FlagDefinition] | None = None) -> MemoryFlagStore",
+          "description": "In-memory flag store for development and testing."
+        },
+        {
+          "name": "RedisFlagStore",
+          "signature": "RedisFlagStore(redis_url: str) -> RedisFlagStore",
+          "description": "Redis-backed flag store for production use with multiple service instances."
+        }
+      ],
+      "functions": []
+    },
+    "forge.storage": {
+      "description": "File storage abstraction with local filesystem, S3, GCS, and Azure Blob adapters. Provides unified upload/download/list/delete operations.",
+      "error_types": [
+        {"name": "StorageError", "description": "Base exception for storage errors."},
+        {"name": "StorageNotFoundError", "description": "Raised when a file or path is not found."},
+        {"name": "StorageUploadError", "description": "Raised when a file upload fails."},
+        {"name": "StorageDownloadError", "description": "Raised when a file download fails."},
+        {"name": "StorageDeleteError", "description": "Raised when a file delete fails."},
+        {"name": "StorageListError", "description": "Raised when listing files fails."},
+        {"name": "StorageConnectionError", "description": "Raised when connection to the storage backend fails."},
+        {"name": "StoragePermissionError", "description": "Raised when permission is denied for a storage operation."}
+      ],
+      "classes": [
+        {
+          "name": "StorageModule",
+          "signature": "StorageModule() -> StorageModule",
+          "description": "ForgeModule that provides storage abstraction with pluggable backends.",
+          "example": "runtime.register(StorageModule())"
+        },
+        {
+          "name": "StorageBackend",
+          "signature": "StorageBackend() -> StorageBackend",
+          "description": "Abstract base class for storage backends. Defines the protocol for upload, download, list, delete, and exists operations."
+        },
+        {
+          "name": "FileInfo",
+          "signature": "FileInfo(path: str, size: int, modified_at: datetime | None = None, content_type: str | None = None) -> FileInfo",
+          "description": "Metadata about a stored file, including path, size, modification time, and content type."
+        },
+        {
+          "name": "LocalFilesystemAdapter",
+          "signature": "LocalFilesystemAdapter(base_path: Path | str = '.') -> LocalFilesystemAdapter",
+          "description": "Local filesystem storage adapter. Stores files in the specified base directory."
+        },
+        {
+          "name": "S3Adapter",
+          "signature": "S3Adapter(bucket: str, region: str = 'us-east-1', endpoint_url: str | None = None) -> S3Adapter",
+          "description": "Amazon S3 storage adapter. Requires boto3 package. Supports any S3-compatible storage (MinIO, DigitalOcean Spaces, etc.)."
+        },
+        {
+          "name": "GCSAdapter",
+          "signature": "GCSAdapter(bucket: str, project: str | None = None) -> GCSAdapter",
+          "description": "Google Cloud Storage adapter. Requires google-cloud-storage package."
+        },
+        {
+          "name": "AzureAdapter",
+          "signature": "AzureAdapter(container: str, connection_string: str) -> AzureAdapter",
+          "description": "Azure Blob Storage adapter. Requires azure-storage-blob package."
+        },
+        {
+          "name": "normalize_path",
+          "signature": "normalize_path(path: str) -> str",
+          "description": "Normalize a file path to use forward slashes and remove leading/trailing slashes."
+        }
+      ],
+      "functions": []
+    },
+    "forge.jobs": {
+      "description": "Background jobs and scheduling module. Provides queue-backed async job execution with automatic retry, concurrency control, dead-letter queues, cron-like scheduled tasks, and progress tracking.",
+      "error_types": [
+        {"name": "JobError", "description": "Base exception for job-related errors."},
+        {"name": "JobNotFoundError", "description": "Raised when a job is not found."},
+        {"name": "JobExecutionError", "description": "Raised when a job execution fails."}
+      ],
+      "classes": [
+        {
+          "name": "JobsModule",
+          "signature": "JobsModule() -> JobsModule",
+          "description": "ForgeModule that provides background job processing and scheduling infrastructure.",
+          "example": "runtime.register(JobsModule())"
+        },
+        {
+          "name": "JobDefinition",
+          "signature": "JobDefinition(func: Callable, queue: str = 'default', retry: int = 3, timeout: float = 300.0) -> JobDefinition",
+          "description": "Definition of a job type. Created by the @job decorator. Supports enqueue() for adding jobs to the queue.",
+          "example": "@job(queue='emails', retry=3)\nasync def send_welcome(user_id: int): ...\nawait send_welcome.enqueue(user_id=123)"
+        },
+        {
+          "name": "ScheduleDefinition",
+          "signature": "ScheduleDefinition(func: Callable, cron: str) -> ScheduleDefinition",
+          "description": "Definition of a scheduled job. Created by the @schedule decorator with a cron expression."
+        },
+        {
+          "name": "Job",
+          "signature": "Job(id: str, name: str, kwargs: dict[str, Any], status: JobStatus) -> Job",
+          "description": "A queued job instance with unique ID, status tracking, and execution metadata."
+        },
+        {
+          "name": "JobQueue",
+          "signature": "JobQueue(backend: QueueBackend) -> JobQueue",
+          "description": "Queue implementation for job storage and retrieval. Supports FIFO ordering, priority, and retry with backoff."
+        },
+        {
+          "name": "JobStatus",
+          "signature": "JobStatus",
+          "description": "Enum of job statuses: PENDING, RUNNING, COMPLETED, FAILED, RETRYING, CANCELLED."
+        },
+        {
+          "name": "JobResult",
+          "signature": "JobResult(job_id: str, status: JobStatus, result: Any = None, error: str | None = None) -> JobResult",
+          "description": "Result of a job execution, including final status and optional error information."
+        },
+        {
+          "name": "Scheduler",
+          "signature": "Scheduler() -> Scheduler",
+          "description": "Cron-based scheduler that manages scheduled job execution. Runs in a background task."
+        },
+        {
+          "name": "ScheduledJob",
+          "signature": "ScheduledJob(name: str, cron: CronExpression, func: Callable) -> ScheduledJob",
+          "description": "A scheduled job combining a cron expression with an async function."
+        },
+        {
+          "name": "CronExpression",
+          "signature": "CronExpression(expression: str) -> CronExpression",
+          "description": "Parsed cron expression with next-run-time calculation. Supports standard 5-field cron syntax."
+        },
+        {
+          "name": "QueueBackend",
+          "signature": "QueueBackend() -> QueueBackend",
+          "description": "Abstract base class for queue storage backends."
+        },
+        {
+          "name": "MemoryBackend",
+          "signature": "MemoryBackend() -> MemoryBackend",
+          "description": "In-memory queue backend for development and testing."
+        },
+        {
+          "name": "RedisBackend",
+          "signature": "RedisBackend(redis_url: str) -> RedisBackend",
+          "description": "Redis-backed queue backend for production use. Supports persistence, visibility timeouts, and dead-letter queues."
+        }
+      ],
+      "functions": [
+        {
+          "name": "job",
+          "signature": "job(queue: str = 'default', retry: int = 3, timeout: float = 300.0) -> Callable",
+          "description": "Decorator that marks an async function as a background job. Adds an enqueue() method to the decorated function.",
+          "example": "@job(queue='emails', retry=3)\nasync def send_email(user_id: int, template: str): ...\n\n# Enqueue for background execution\nawait send_email.enqueue(user_id=42, template='welcome')"
+        },
+        {
+          "name": "schedule",
+          "signature": "schedule(cron: str) -> Callable",
+          "description": "Decorator that schedules an async function to run on a cron schedule.",
+          "example": "@schedule(cron='0 9 * * *')\nasync def daily_report(): ..."
+        }
+      ]
+    },
+    "forge.crud": {
+      "description": "Template-based CRUD code generation for FastAPI. Generates Create/Read/Update/Delete route handlers from a Pydantic schema with pagination, filtering, sorting, and optional soft-delete support.",
+      "error_types": [
+        {"name": "CrudError", "description": "Base exception for CRUD-related errors."},
+        {"name": "CrudGenerationError", "description": "Raised when CRUD code generation fails."},
+        {"name": "SchemaValidationError", "description": "Raised when the provided schema is invalid for CRUD generation."},
+        {"name": "TemplateNotFoundError", "description": "Raised when the CRUD template file is not found."}
+      ],
+      "classes": [
+        {
+          "name": "CrudModule",
+          "signature": "CrudModule() -> CrudModule",
+          "description": "ForgeModule that provides CRUD generation capabilities."
+        },
+        {
+          "name": "CrudGenerator",
+          "signature": "CrudGenerator(config: CrudGeneratorConfig) -> CrudGenerator",
+          "description": "Generates CRUD route handlers from a Pydantic schema configuration. Produces create, read, update, delete, and list endpoints with pagination.",
+          "example": "generator = CrudGenerator(config)\nroutes = generator.generate()\napp.include_router(routes)"
+        },
+        {
+          "name": "CrudGeneratorConfig",
+          "signature": "CrudGeneratorConfig(schema_name: str, model_name: str, table_name: str, primary_key: str = 'id', primary_key_type: str = 'int') -> CrudGeneratorConfig",
+          "description": "Configuration for CRUD code generation. Specifies schema names, model names, table names, and key types."
+        },
+        {
+          "name": "CrudOperation",
+          "signature": "CrudOperation",
+          "description": "Enum of CRUD operations: CREATE, READ, UPDATE, DELETE, LIST."
+        },
+        {
+          "name": "FieldInfo",
+          "signature": "FieldInfo(name: str, type: str, required: bool, default: Any = None) -> FieldInfo",
+          "description": "Information about a single field in a CRUD schema."
+        }
+      ],
+      "functions": [
+        {
+          "name": "generate_crud",
+          "signature": "generate_crud(config: CrudGeneratorConfig) -> APIRouter",
+          "description": "Convenience function to generate and return a FastAPI APIRouter with CRUD endpoints from a config.",
+          "example": "router = generate_crud(CrudGeneratorConfig(schema_name='User', model_name='User', table_name='users'))\napp.include_router(router)"
         }
       ]
     }
