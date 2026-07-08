@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "forge-kaif",
   "description": "Machine-readable API manifest for AI agent tool discovery. Describes the full public API surface of the forge-kaif package — including module classes, functions, type signatures, docstrings, error types, and usage examples.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "$comment": "All forge exceptions follow a parseable format: {ExceptionClass}: {what}\n\n  {why}\n\n  To fix this:\n    {step 1}\n    {step 2}\n\n  Docs: {url}",
   "modules": {
     "forge.config": {

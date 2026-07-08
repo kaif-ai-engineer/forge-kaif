@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
+## 0.4.0 (2026-07-09)
+
+### Added
+
+- feat(#25): Comprehensive `.cursorrules` template for AI agent coding conventions
+- feat(#25): Update `forge.schema.json` with all modules (events, featureflags, storage, jobs, crud) and complete type annotations
+- docs: Update AI agent guide with new `.cursorrules` and schema reference
+- chore: Add performance benchmarks for P0 modules with CI regression gate (#23)
+- test: Add full application integration suite for P0 modules (#24)
+
+### Fixed
+
+- fix: Cross-environment mypy ignores for scaffolding and redis backend
+- fix: Resolve mypy strict-mode errors in redis backend
+
 ## 0.3.0 (2026-07-06)
 
 ### Added
