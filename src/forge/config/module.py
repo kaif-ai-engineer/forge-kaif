@@ -67,6 +67,8 @@ class ConfigModule(ForgeModule):
         missing: list[str] = []
         for key in keys:
             value = os.environ.get(key)
+            if not value and self._config is not None:
+                value = _get_config_value_by_env_var(self._config, key)
             if not value:
                 missing.append(key)
 
@@ -144,3 +146,19 @@ def _apply_override(config: ForgeConfig, dotted_path: str, value: Any) -> None:
     for part in parts[:-1]:
         target = getattr(target, part)
     setattr(target, parts[-1], value)
+
+
+def _get_config_value_by_env_var(config: ForgeConfig, env_var: str) -> Any:
+    if env_var.startswith("FORGE_"):
+        name = env_var[6:].lower()
+        if hasattr(config, name):
+            return getattr(config, name)
+
+        for _, field_val in config:
+            if hasattr(field_val, "model_config"):
+                prefix = field_val.model_config.get("env_prefix")
+                if prefix and env_var.startswith(prefix):
+                    sub_name = env_var[len(prefix) :].lower()
+                    if hasattr(field_val, sub_name):
+                        return getattr(field_val, sub_name)
+    return None

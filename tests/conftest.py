@@ -124,3 +124,22 @@ def env_vars() -> Any:
 def sample_config() -> ForgeConfig:
     """Return a default ForgeConfig instance."""
     return ForgeConfig()
+
+
+# ---------------------------------------------------------------------------
+# Full runtime with all default modules
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+async def full_runtime() -> AsyncIterator[ForgeRuntime]:
+    """
+    Provide a fully initialized ForgeRuntime with all default modules
+    (ConfigModule, LogModule, RetryModule, HealthModule, CacheModule,
+    ValidationModule, JobsModule).
+    """
+    rt = ForgeRuntime()
+    rt.use_defaults()
+    await rt.init()
+    yield rt
+    await rt.teardown()

@@ -165,6 +165,41 @@ class ForgeRuntime:
         except ImportError:
             pass
 
+        try:
+            from forge.ai.module import AIModule
+
+            self.register(AIModule())
+        except ImportError:
+            pass
+
+        try:
+            from forge.featureflags.module import FeatureFlagsModule
+
+            self.register(FeatureFlagsModule())
+        except ImportError:
+            pass
+
+        try:
+            from forge.storage.module import StorageModule
+
+            self.register(StorageModule())
+        except ImportError:
+            pass
+
+        try:
+            from forge.events.module import EventsModule
+
+            self.register(EventsModule())
+        except ImportError:
+            pass
+
+        try:
+            from forge.crud.module import CrudModule
+
+            self.register(CrudModule())
+        except ImportError:
+            pass
+
         return self
 
     def get(self, module_type: type[ForgeModule]) -> ForgeModule:

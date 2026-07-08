@@ -15,6 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    outputs:
+      regression: ${{ steps.check.outputs.regression }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -35,13 +43,125 @@ jobs:
             uv-benchmark-
 
       - name: Install dependencies
-        run: uv pip install --system -e ".[all]"
+        run: uv pip install --system -e ".[all,dev]"
 
       - name: Run benchmarks
-        run: pytest benchmarks/ --benchmark-only --benchmark-json output.json
+        id: bench
+        continue-on-error: true
+        run: |
+          pytest benchmarks/ \
+            --benchmark-only \
+            --benchmark-json output.json \
+            --benchmark-autosave \
+            --benchmark-save=baseline
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: output.json
+
+      - name: Check thresholds and regressions
+        id: check
+        run: |
+          python .github/scripts/check_benchmarks.py output.json
+
+      - name: Post benchmark report
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('output.json', 'utf8'));
+            const benchmarks = results.benchmarks || [];
+
+            const thresholdMap = {
+              test_runtime_init_time: { label: 'Runtime init (5 modules)', target: '<200ms', unit: 'ms', multiplier: 1000, lt: 0.2 },
+              test_config_load_time: { label: 'Config load', target: '<50ms', unit: 'ms', multiplier: 1000, lt: 0.05 },
+              test_log_throughput: { label: 'Log throughput', target: '>25k/s', unit: 'logs/s', isThroughput: true, gt: 25000 },
+              test_retry_overhead: { label: 'Retry overhead', target: '<1ms/call', unit: 'ms', multiplier: 1000, lt: 0.001 },
+              test_health_check_response: { label: 'Health check', target: '<100ms', unit: 'ms', multiplier: 1000, lt: 0.1 },
+              test_ai_overhead: { label: 'AI module overhead', target: '<5ms', unit: 'ms', multiplier: 1000, lt: 0.005 },
+            };
+
+            let table = `## Benchmark Results\n\n`;
+            table += `| Benchmark | Result | Target | Status |\n`;
+            table += `|-----------|--------|--------|--------|\n`;
+
+            let allPassed = true;
+            for (const b of benchmarks) {
+              const name = b.name;
+              const info = thresholdMap[name];
+              const mean = b.stats?.mean || 0;
+              let status, display;
+
+              if (info?.isThroughput) {
+                const thru = mean > 0 ? Math.round(1 / mean) : 0;
+                display = thru.toLocaleString() + ' logs/s';
+                status = thru > info.gt ? ':white_check_mark:' : ':x:';
+                if (thru <= info.gt) allPassed = false;
+              } else if (info) {
+                display = (mean * info.multiplier).toFixed(2) + info.unit;
+                status = mean < info.lt ? ':white_check_mark:' : ':x:';
+                if (mean >= info.lt) allPassed = false;
+              } else {
+                display = (mean * 1000).toFixed(2) + 'ms';
+                status = ':grey_question:';
+              }
+
+              table += `| **${info?.label || name}** | ${display} | ${info?.target || '—'} | ${status} |\n`;
+            }
+
+            table += `\n---\n`;
+            if (allPassed) {
+              table += `:tada: All benchmarks passed their thresholds.`;
+            } else {
+              table += `:warning: **Performance regression detected** (>10% degradation).\n\n`;
+              table += `Add the \`benchmark-approved\` label to the PR to override this check.`;
+            }
+
+            const { data: existing } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = existing.find(c =>
+              c.user.type === 'Bot' && c.body?.startsWith('## Benchmark Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: botComment.id,
+                body: table,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body: table,
+              });
+            }
+
+      - name: Check for override label
+        id: override
+        if: steps.check.outputs.regression == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number,
+            });
+            const labels = pr.labels.map(l => l.name);
+            const approved = labels.includes('benchmark-approved');
+            core.setOutput('approved', String(approved));
+            if (approved) {
+              core.info('Regression overridden by benchmark-approved label');
+            }
+
+      - name: Fail on regression (requires approval)
+        if: steps.check.outputs.regression == 'true' && steps.override.outputs.approved != 'true'
+        run: |
+          echo "::error::Performance regression detected (>10%)."
+          echo "::error::Add the 'benchmark-approved' label to this PR to override."
+          exit 1
